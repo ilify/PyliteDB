@@ -9,6 +9,40 @@
 - **In-Memory Database**: Stores data in memory for fast access, with options to save/load to disk.
 - **Supports Multiple Formats**: Load data from CSV, JSON, Excel, and other formats supported by Pandas.
 
+## Usage
+### Create a Database
+
+```python
+db = Database()
+```
+
+### Create a Table
+
+```python
+db.CreateTable("Users").AddColumns(
+    name=str,
+    age=int,
+    email=str
+)
+```
+
+### Insertion
+
+```python
+Users.Insert(
+    name="John",
+    age=50,
+    email="test@example.com"
+)
+```
+
+### Conditional Read
+```python
+Users[Users["age"] > 32]
+# Output : John 50 test@example.com
+```
+
+
 ## Installation ( Comming Soon 😐)
 
 <!-- 
