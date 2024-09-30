@@ -12,6 +12,6 @@
 ## Installation ( Comming Soon 😐)
 
 To install **Pylite**, use pip:
-
+<!-- 
 ```bash
-pip install pylite
+pip install pylite -->
