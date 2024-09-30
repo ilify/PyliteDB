@@ -15,7 +15,14 @@ class Database():
     
     def CreateTable(self,TableName) -> pd.DataFrame:
         self.Tables[TableName] = Table()
+        self.add_property(TableName)
         return self.Tables[TableName]
+    
+    def __len__(self) -> int:
+        return len(self.Tables.keys())
+    
+    def add_property(self, name):
+        setattr(self.__class__, name, property(lambda self: self.Tables[name]))
     
     
 class Table(pd.DataFrame):
@@ -30,6 +37,10 @@ class Table(pd.DataFrame):
     def Insert(self,**Data):
         Row = [Data[i] if i in Data else np.nan for i in self.columns]
         self.loc[len(self)] = Row
+        
+        
+    def Delete(self,Condition):
+        self.drop(self[Condition].index,inplace=True)
     
     def __getitem__(self,Key) -> pd.Series:
         try:
@@ -37,8 +48,7 @@ class Table(pd.DataFrame):
         except :
             raise SystemExit(bcolors.FAIL+f"Pylite Error : Column '{Key}' does not exist in the table"+bcolors.ENDC)
 
-
-
+    
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
