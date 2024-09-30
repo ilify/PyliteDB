@@ -29,7 +29,7 @@ db.CreateTable("Users").AddColumns(
 ### Insertion
 
 ```python
-Users.Insert(
+db.Users.Insert(
     name="John",
     age=50,
     email="test@example.com"
@@ -38,8 +38,14 @@ Users.Insert(
 
 ### Conditional Read
 ```python
-Users[Users["age"] > 32]
+db.Users[db.Users.age > 32]
+db.Users[db.Users.age.between(20,30)]
+db.Users[(db.Users.age >= 20) & (db.Users.age <= 30)]
 # Output : John 50 test@example.com
+```
+### Deletion
+```python
+db.Users.Delete(db.Users.age.between(20,30))
 ```
 
 
