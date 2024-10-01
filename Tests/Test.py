@@ -1,12 +1,12 @@
-from Pylite import Database, Table,Column
+from Pylite import Database,Table,Column
 
 #Column
 c = Column(int)
-c.AddAll(10,20,30,40,50,65640,70,80,90,100,110,120,130,140,150000)
+c.AddAll(10,20,30,40,50,65640,0,80,90,100,110,120,130,140,150000)
 c[c.between(10,100)] = -1
 c.Removeif(lambda x: x == -1)
-c.Apply(lambda x: x+1)
-print(c[c > 200])
+c.Apply(lambda x: x ** 2)
+print(c)
 
 #Create Table
 # db.CreateTable("Users").AddColumns(

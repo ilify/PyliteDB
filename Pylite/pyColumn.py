@@ -1,5 +1,5 @@
 from typing import Type
-
+import json
 class Column():
     def __init__(self,ctype) -> None:
         self.Type:__class__ = ctype
@@ -31,6 +31,7 @@ class Column():
     def between(self, start, end):
         return [start <= value <= end for value in self.Data]
     
+    
     def __setitem__(self, key, value):
         if isinstance(key, int):
             self.Data[key] = value
@@ -43,7 +44,7 @@ class Column():
             
     
     def Add(self,value):
-        if value.__class__ != self.Type:
+        if value.__class__ != self.Type and value != None:
             raise ValueError(f"Value {value} is not of type {self.Type}")
         self.Data.append(value)
     def AddAll(self,*values):
@@ -76,4 +77,22 @@ class Column():
             data += f"{str(i).ljust(max_len)} | " + f"{self.Data[i]}\n"
         return (f"Column {self.Type} with {len(self)} elements \n{data[:-1] if data else 'Empty'}")
     
+    def serialize(self) -> str:
+        """
+        Serializes the Column object to a JSON string.
+        """
+        return json.dumps({
+            'type': self.Type.__name__,  # Store the type name as a string
+            'data': self.Data
+        })
     
+    @staticmethod
+    def deserialize(json_data: str) -> 'Column':
+        """
+        Deserializes a JSON string to a Column object.
+        """
+        data = json.loads(json_data)
+        column_type = eval(data['type'])  # Converts string back to type
+        column = Column(column_type)
+        column.Data = data['data']
+        return column
