@@ -8,15 +8,14 @@
 
 ## Usage
 
-# Column Class
+# Column
 
-## Methods
 <details>
-<summary>Click to view the Column Class Methods</summary>
+<summary>Methods</summary>
 
 | Method                   | Description                                                                                                                                              |
 |--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `__init__(ctype)`        | Initializes a new `Column` instance with the specified type `ctype`.                                                                                   |
+
 | `Add(value)`             | Adds a single value of the correct type to the column.                                                                                                |
 | `AddAll(*values)`        | Adds multiple values at once to the column.                                                                                                           |
 | `__getitem__(condition)` | Retrieves values based on the provided index or a list of boolean conditions.                                                                          |
@@ -31,12 +30,5 @@
 | `between(start, end)`    | Checks which values are within the specified range (inclusive).                                                                                      |
 | `Apply(func)`            | Applies a function to each element in the column.                                                                                                      |
 | `__len__()`              | Returns the number of elements in the column.                                                                                                          |
-| `__str__()`              | Provides a string representation of the column, including its type and elements.                                                                      |
-| `__gt__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is greater than the threshold. |
-| `__lt__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is less than the threshold.      |
-| `__ge__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is greater than or equal to the threshold. |
-| `__le__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is less than or equal to the threshold. |
-| `__eq__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is equal to the threshold.      |
-| `__ne__(threshold)`      | Compares each element to the specified threshold and returns a list of boolean values indicating whether each element is not equal to the threshold.  |
 
 </details>
