@@ -1,6 +1,8 @@
 # __init__.py
 
-from .pylite import Database  # Assuming Database is the core class in pylite.py
+from .pyTable import Table 
+from .pyDatabase import Database 
+from .pyColumn import Column
 
 # Optional: Metadata
 __version__ = "0.1.0"
