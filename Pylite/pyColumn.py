@@ -26,20 +26,16 @@ class Column():
     def Get(self,index) -> 'Type':
         #Read Only
         return self.Data[index]
-    
     def Apply(self,func) -> None:
         self.Data = list(map(func,self.Data))
-        
     def ApplyIf(self,func,condition) -> None:
         self.Data = [func(i) if condition(i) else i for i in self.Data]
-        
     def __str__(self) -> str:
         data = ""
         max_len = len(str(len(self.Data)))
         for i in range(len(self.Data)):
             data += f"{str(i).ljust(max_len)} | " + f"{self.Data[i]}\n"
         return (f"Column {self.Type} with {len(self)} elements \n{data[:-1] if data else 'Empty'}")
-    
     def serialize(self) -> str:
         """
         Serializes the Column object to a JSON string.
@@ -48,7 +44,6 @@ class Column():
             'type': self.Type.__name__,  # Store the type name as a string
             'data': self.Data
         })
-    
     @staticmethod
     def deserialize(json_data: str) -> 'Column':
         """
