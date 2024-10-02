@@ -10,6 +10,7 @@ t.AddColumn(
     Age = int,
     Salary = float
 )
+
 t.Insert(
     Id=1,
     Name="John",
@@ -20,11 +21,11 @@ t.Insert(
 
 t.Select(
     ["Name","Age"], # if all data is needed, pass Nothing Select(where=lambda row: row.Age > 20)
-    where=lambda row: row.Age > 20
+    where= t.Age > 20
 )
 
 t.Delete(0) #index
-t.Delete(where=lambda row: row.Age < 20) #condition
+t.Delete(where=t.Age < 20) #condition
 
 t.Update(
     0,  # index of the row
@@ -33,12 +34,12 @@ t.Update(
 )
 
 t.Update(
-    where=lambda row: row.Age < 25,  # condition to find rows
+    where=t.Age < 25,  # condition to find rows
     Salary=55000.0  # fields to update
 )
 
 t.Update(
-    where=lambda row: row.Id == 1,  # condition to find rows
+    where = t.Id == 1,  # condition to find rows
     Salary=55000.0,  # fields to update
     Age=60
 )
