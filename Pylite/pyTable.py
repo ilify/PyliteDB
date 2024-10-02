@@ -26,5 +26,9 @@ class Table:
         self.Columns[NewName] = self.Columns.pop(OldName)
         setattr(self.__class__, NewName, property(lambda self, name=NewName: self.Columns[name]))
         delattr(self.__class__, OldName)
+        
+    def RemoveColumn(self, ColumnName):
+        del self.Columns[ColumnName]
+        delattr(self.__class__, ColumnName)
 
     
