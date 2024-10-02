@@ -30,6 +30,9 @@ class Column():
         self.Data = list(map(func,self.Data))
     def ApplyIf(self,func,condition) -> None:
         self.Data = [func(i) if condition(i) else i for i in self.Data]
+    def ReType(self,newType:Type) -> None:
+        self.Data = [newType(i) for i in self.Data]
+        self.Type = newType
     def __str__(self) -> str:
         data = ""
         max_len = len(str(len(self.Data)))
