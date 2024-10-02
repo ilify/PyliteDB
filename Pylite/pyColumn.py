@@ -43,12 +43,10 @@ class Column():
             raise Exception("Invalid Condition or Value")           
             
     
-    def Add(self,value):
-        if value.__class__ != self.Type and value != None:
-            raise ValueError(f"Value {value} is not of type {self.Type}")
-        self.Data.append(value)
-    def AddAll(self,*values):
+    def Add(self,*values):
         for value in values:
+            if value.__class__ != self.Type and value != None:
+                raise ValueError(f"Value {value} is not of type {self.Type}")
             self.Add(value)
     def RemoveFirst(self):
         self.Data.pop(0)
@@ -58,17 +56,21 @@ class Column():
         self.Data = [i for i in self.Data if i != value]
     def RemoveAt(self,index):
         self.Data.pop(index)
-    def Removeif(self,func):
+    def RemoveIf(self,func):
         self.Data = [i for i in self.Data if not func(i)]
     
-    def Getif(self,func):
+    def GetIf(self,func):
         return [i for i in self.Data if func(i)]
     
     def Get(self,index):
+        #Read Only
         return self.Data[index]
     
     def Apply(self,func):
         self.Data = list(map(func,self.Data))
+        
+    def ApplyIf(self,func,condition):
+        self.Data = [func(i) if condition(i) else i for i in self.Data]
         
     def __str__(self) -> str:
         data = ""

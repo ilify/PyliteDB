@@ -2,47 +2,24 @@ from Pylite import Database,Table,Column
 
 #Column
 c = Column(int)
-c.AddAll(10,20,30,40,50,65640,0,80,90,100,110,120,130,140,150000)
-c[c.between(10,100)] = -1
-c.Removeif(lambda x: x == -1)
-c.Apply(lambda x: x ** 2)
-print(c)
-
-#Create Table
-# db.CreateTable("Users").AddColumns(
-#     name=str,
-#     age=int,
-#     email=str
-# )
-
 #Insert
-# db.Users.Insert(
-#     name="John20",
-#     age=20,
-#     email="test@example.com"
-# )
-# db.Users.Insert(
-#     name="John25",
-#     age=25,
-#     email="test@example.com"
-# )
-# db.Users.Insert(
-#     name="John35",
-#     age=35,
-#     email="test@example.com"
-# )
+c.Add(50,60,70,80,90,100)
 
-#Read All
-# print(db.Users)
-
-#Read Specific
-# print(db.Users[db.Users.age.between(20,30)])
-# print(db.Users[(db.Users.age >= 20) & (db.Users.age <= 30)])
+#Select
+c.Get(0)
+c.GetIf(lambda x: x > 50)
 
 #Delete
-# db.Users.Delete(db.Users.age.between(20,30))
+c.RemoveFirst()
+c.RemoveLast()
+c.RemoveAll(70)
+c.RemoveAt(1)
+c.RemoveIf(lambda x: x > 80)
 
 #Update
-# db.Users.age.apply(lambda x: x+1)
+c.Apply(lambda x: x + 10)
+c.ApplyIf(lambda x: 80,lambda x: x > 100)
 
-# print(db.Users)
+
+
+
