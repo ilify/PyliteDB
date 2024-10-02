@@ -12,7 +12,8 @@ t.AddColumn(
 )
 t.RenameColumn("Name","FullName")
 t.FullName.Add("John","Doe","Jane","Doe","Alice","Wonderland")
-print(t.FullName)
+t.RemoveColumn("Age")
+print(t.Age)
 
 
 #Column
