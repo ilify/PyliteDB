@@ -6,8 +6,8 @@ c = Column(int)
 c.Add(50,60,70,80,90,100)
 
 #Select
-c.Get(0)
-c.GetIf(lambda x: x > 50)
+c.Get(0) #Read Only
+c.GetIf(lambda x: x > 50) #Read Only
 
 #Delete
 c.RemoveFirst()
@@ -17,8 +17,8 @@ c.RemoveAt(1)
 c.RemoveIf(lambda x: x > 80)
 
 #Update
-c.Apply(lambda x: x + 10)
-c.ApplyIf(lambda x: 80,lambda x: x > 100)
+c.Apply(lambda x: "hi")
+c.ApplyIf(lambda _: 80,lambda x: x > 100)
 
 
 
