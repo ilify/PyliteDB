@@ -4,6 +4,7 @@ class Table:
     def __init__(self, TableName):
         self.TableName:str = TableName
         self.Columns: dict[str, Column] = {}
+        self.PrintPadding = 1
 
     def __getitem__(self, Key) -> Column:
         return self.Columns[Key]
@@ -30,5 +31,22 @@ class Table:
     def RemoveColumn(self, ColumnName):
         del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
+        
+    def __str__(self) -> str:
+        
+        def getMaxLength(column) -> int:
+            return max([len(str(x)) for x in column.Data])
+        
+        def formatCell(cell, maxLen):
+            return f"{cell}{' '*(maxLen-len(str(cell)))}"
+        
+        maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
+        numberOfLines = max([len(col.Data) for col in self.Columns.values()])
+        ret = f"Table: {self.TableName}\n"
+        ret += "|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + "\n"
+        ret += "\n".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + "\n"
+        
+        return ret
 
+    
     
