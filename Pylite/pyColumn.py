@@ -1,9 +1,10 @@
 from typing import Type
 import json
 class Column():
-    def __init__(self,ctype) -> None:
+    def __init__(self,ctype,options = []) -> None:
         self.Type:__class__ = ctype
         self.Data:list[self.Type] = []
+        self.Options:list[str] = options
     def __len__(self) -> int:
         return len(self.Data)   
     def Add(self,*values) -> None:
