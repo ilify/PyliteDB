@@ -32,13 +32,26 @@ class Table:
         del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
         
+    def Insert(self, **columns: Union[list, Type]):
+        for k,v in self.Columns.items():
+            if k in list(columns.keys()):
+                if "Unique" in v.Options and columns[k] in v.Data:
+                    raise ValueError(f"Value '{columns[k]}' already exists in '{k}' column with Unique Option.")
+                v.Add(v.Type(columns[k]))
+            else:
+                if "AutoIncrement" in v.Options:
+                    v.Add(v.Type(max(v.Data)+1))
+                else:
+                    v.Add(v.Type())
+    
+    
     def __str__(self) -> str:
         
         def getMaxLength(column) -> int:
             return max([len(str(x)) for x in column.Data])
         
         def formatCell(cell, maxLen):
-            return f"{cell}{' '*(maxLen-len(str(cell)))}"
+            return f" {cell} {' '*(maxLen-len(str(cell)))}"
         
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
