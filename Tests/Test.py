@@ -36,18 +36,17 @@ v = t.Select(
 
 # print(v)
 # t.Delete(0) #index
-t.Delete(where=t.Age < 30) #condition
-print(t)
+# t.Delete(where=t.Age < 30) #condition
 
 # t.Update(
 #     0,  # index of the row
 #     Name="Jane",  # fields to update
-#     Age=30
+#     Age=300
 # )
 
 # t.Update(
-#     where=t.Age < 25,  # condition to find rows
-#     Salary=55000.0  # fields to update
+#     where=t.Age < 30,  # condition to find rows
+#     Salary=0.0  # fields to update
 # )
 
 # t.Update(
@@ -55,6 +54,7 @@ print(t)
 #     Salary=55000.0,  # fields to update
 #     Age=60
 # )
+# print(t)
 
 
 #Column
