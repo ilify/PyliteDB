@@ -5,6 +5,30 @@ class Column():
         self.Type:__class__ = ctype
         self.Data:list[self.Type] = []
         self.Options:list[str] = options
+        
+    def __gt__(self,other) -> bool:
+        return [value > other for value in self.Data ]
+    
+    def __lt__(self, other) -> list:
+        return [value < other for value in self.Data]
+
+    def __eq__(self, other) -> list:
+        return [value == other for value in self.Data]
+
+    def __ge__(self, other) -> list:
+        return [value >= other for value in self.Data]
+
+    def __le__(self, other) -> list:
+        return [value <= other for value in self.Data]
+
+    def __ne__(self, other) -> list:
+        return [value != other for value in self.Data]
+    
+    def between(self,min,max) -> list:
+        return [value > min and value < max for value in self.Data]
+    
+    
+    
     def __len__(self) -> int:
         return len(self.Data)   
     def Add(self,*values) -> None:
@@ -22,6 +46,8 @@ class Column():
         self.Data.pop(index)
     def RemoveIf(self,func) -> None:
         self.Data = [i for i in self.Data if not func(i)]
+    def RemoveByList(self,values) -> None:
+        self.Data = [self.Data[i] for i in range(len(self.Data)) if values[i] == False]
     def GetIf(self,func) -> list:
         return [i for i in self.Data if func(i)]
     def Get(self,index) -> 'Type':
@@ -34,6 +60,8 @@ class Column():
     def ReType(self,newType:Type) -> None:
         self.Data = [newType(i) for i in self.Data]
         self.Type = newType
+    def isEmpty(self) -> bool:
+        return len(self.Data) == 0
     def __str__(self) -> str:
         data = ""
         max_len = len(str(len(self.Data)))

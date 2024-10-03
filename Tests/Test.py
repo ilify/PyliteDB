@@ -28,15 +28,16 @@ t.Insert(
     Salary=50000
 )
 
-print(t)
 
-# t.Select(
-#     ["Name","Age"], # if all data is needed, pass Nothing Select(where=t.Age > 20)
-#     where = t.Age > 20
-# )
+v = t.Select(
+    ["Id","Name","Age"],
+    where= t.Age > 20
+)
 
+# print(v)
 # t.Delete(0) #index
-# t.Delete(where=t.Age < 20) #condition
+t.Delete(where=t.Age < 30) #condition
+print(t)
 
 # t.Update(
 #     0,  # index of the row

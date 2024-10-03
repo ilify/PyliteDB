@@ -44,8 +44,39 @@ class Table:
                 else:
                     v.Add(v.Type())
     
+    def Select(self, what,where=None):
+        ReturnTable = Table("Selected Table")
+        if what == None and where == None:
+            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in self.Columns.keys()]
+            [v.Add(*self.Columns[k].Data) for k,v in ReturnTable.Columns.items()]
+        
+        if where == None:
+            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in what]
+            [v.Add(*self.Columns[k].Data) for k,v in ReturnTable.Columns.items()]
+            
+        if where != None:
+            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in what]
+            [ReturnTable.Columns[i].Add(*[self.Columns[i].Data[j] for j in range(len(where)) if where[j]]) for i in ReturnTable.Columns]
+                        
+        return ReturnTable
+
+    def Delete(self,index=None,where=None):
+        if self.isEmpty():raise ValueError("Table is empty.")
+        if index == None and where == None:
+            self.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
+        if index != None:
+            [v.RemoveAt(index) for v in self.Columns.values()]
+        if where != None:
+            [x.RemoveByList(where) for x in self.Columns.values()]
+            
+
+    def isEmpty(self) -> bool:
+        return all([col.isEmpty() for col in self.Columns.values()])
     
     def __str__(self) -> str:
+        if self.isEmpty():
+            return f"Table: {self.TableName} is empty."
+        
         
         def getMaxLength(column) -> int:
             return max([len(str(x)) for x in column.Data])
@@ -56,8 +87,8 @@ class Table:
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
         ret = f"Table: {self.TableName}\n"
-        ret += "|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + "\n"
-        ret += "\n".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + "\n"
+        ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
+        ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
         
         return ret
 
