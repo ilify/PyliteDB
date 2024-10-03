@@ -70,26 +70,30 @@ class Table:
             [x.RemoveByList(where) for x in self.Columns.values()]
             
 
+    def Update(self, index=None, where=None, **columns: Union[list, Type]):
+        if index == None and where == None:
+            raise ValueError("Please provide either index or where condition.")
+        if index != None:
+            for k,v in columns.items():
+                self.Columns[k].Data[index] = v
+        if where != None:
+            for k,v in columns.items():
+                for i in range(len(where)):
+                    if where[i]:
+                        self.Columns[k].Data[i] = v
+
     def isEmpty(self) -> bool:
         return all([col.isEmpty() for col in self.Columns.values()])
     
     def __str__(self) -> str:
-        if self.isEmpty():
-            return f"Table: {self.TableName} is empty."
-        
-        
-        def getMaxLength(column) -> int:
-            return max([len(str(x)) for x in column.Data])
-        
-        def formatCell(cell, maxLen):
-            return f" {cell} {' '*(maxLen-len(str(cell)))}"
-        
+        if self.isEmpty():return f"Table: {self.TableName} is empty."
+        def getMaxLength(column) -> int:return max([len(str(x)) for x in column.Data])
+        def formatCell(cell, maxLen):return f" {cell} {' '*(maxLen-len(str(cell)))}"
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
         ret = f"Table: {self.TableName}\n"
         ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
         ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
-        
         return ret
 
     
