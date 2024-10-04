@@ -1,10 +1,10 @@
+import json
 from .pyColumn import Column
 from typing import Optional, Union, Type
 class Table:
+    PrintPadding = 1
     def __init__(self, TableName):
-        self.TableName:str = TableName
         self.Columns: dict[str, Column] = {}
-        self.PrintPadding = 1
 
     def __getitem__(self, Key) -> Column:
         return self.Columns[Key]
@@ -40,11 +40,14 @@ class Table:
                 v.Add(v.Type(columns[k]))
             else:
                 if "AutoIncrement" in v.Options:
-                    v.Add(v.Type(max(v.Data)+1))
+                    try:
+                        v.Add(v.Type(max(v.Data)+1))
+                    except:
+                        v.Add(v.Type())
                 else:
                     v.Add(v.Type())
     
-    def Select(self, what,where=None):
+    def Select(self, what = None,where=None):
         ReturnTable = Table("Selected Table")
         if what == None and where == None:
             [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in self.Columns.keys()]
@@ -86,15 +89,36 @@ class Table:
         return all([col.isEmpty() for col in self.Columns.values()])
     
     def __str__(self) -> str:
-        if self.isEmpty():return f"Table: {self.TableName} is empty."
+        if self.isEmpty():return f"Table is empty."
         def getMaxLength(column) -> int:return max([len(str(x)) for x in column.Data])
         def formatCell(cell, maxLen):return f" {cell} {' '*(maxLen-len(str(cell)))}"
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
-        ret = f"Table: {self.TableName}\n"
+        ret = f"Table:\n"
         ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
         ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
         return ret
 
-    
+    def serialize(self) -> str:
+        """
+        Serializes the Table object to a JSON string.
+        """
+        return json.dumps({
+            "Columns": {k:{
+                    "type": v.Type.__name__,
+                    "data": v.Data,
+                    "options": v.Options
+                } for k,v in self.Columns.items()}
+        })
+    @staticmethod
+    def deserialize(json_data: str) -> 'Column':
+        """
+        Deserializes a JSON string to a Table object.
+        """
+        data = json.loads(json_data)
+        t = Table()
+        for k,v in data["Columns"].items():
+            t.Columns[k] = Column(v["type"], v["options"])
+            t.Columns[k].Data = v["data"]
+        return t
     

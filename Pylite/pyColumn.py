@@ -74,7 +74,8 @@ class Column():
         """
         return json.dumps({
             'type': self.Type.__name__,  # Store the type name as a string
-            'data': self.Data
+            'data': self.Data,
+            'options': self.Options
         })
     @staticmethod
     def deserialize(json_data: str) -> 'Column':
@@ -85,4 +86,5 @@ class Column():
         column_type = eval(data['type'])  # Converts string back to type
         column = Column(column_type)
         column.Data = data['data']
+        column.Options = data['options']
         return column
