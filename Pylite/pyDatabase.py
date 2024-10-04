@@ -3,14 +3,27 @@ from typing import Optional
 
 from Pylite.pyColumn import Column
 from .pyTable import Table
+from .pyTools import *
 
 class Database():
-    def __init__(self,path=""):
+    def __init__(self,path="",key=""):
         self.path = path
-        if path != "":
-            self = Database.Load(path)
-        self.key = ""
+        self.key = key
         self.Tables = {}
+        if path != "":
+            try:
+                with open(path,"r",encoding="UTF16") as f:
+                    data = json.loads(Decrypt(f.read(),self.key))
+                    for k,v in data["Tables"].items():
+                        t = self.CreateTable(k)
+                        for c in v["Columns"].keys():
+                            t.Columns[c] = Column(v["Columns"][c]["Type"],v["Columns"][c]["Options"])
+                            t.Columns[c].Data = v["Columns"][c]["Data"]
+            except FileNotFoundError:
+                raise FileNotFoundError(f"File '{path}' not found.")
+            except json.JSONDecodeError:
+                raise Exception("Incorrect Password")
+        
     
     def __getattr__(self, name: str) -> Optional[Table]:
         if name in self.Tables:
@@ -48,8 +61,8 @@ class Database():
                     } for c in v.Columns.keys()}
                 } for k,v in self.Tables.items()}
         })
-        with open(Path,"w") as f:
-            f.write(file)
+        with open(Path,"w",encoding="UTF16") as f:
+            f.write(Crypt(file,self.key))
         
     @staticmethod
     def Load(path):

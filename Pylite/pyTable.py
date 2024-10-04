@@ -98,7 +98,8 @@ class Table:
         ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
         ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
         return ret
-
+    
+    
     def serialize(self) -> str:
         """
         Serializes the Table object to a JSON string.
