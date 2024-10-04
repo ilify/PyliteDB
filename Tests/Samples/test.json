@@ -1,0 +1,16 @@
+{
+  "Tables": {
+    "Users": {
+      "Columns": {
+        "Id": {
+          "Type": "int",
+          "Data": [0],
+          "Options": ["AutoIncrement", "Unique"]
+        },
+        "Name": { "Type": "str", "Data": ["John"], "Options": [] },
+        "Age": { "Type": "int", "Data": [25], "Options": [] },
+        "Salary": { "Type": "float", "Data": [0.0], "Options": [] }
+      }
+    }
+  }
+}
