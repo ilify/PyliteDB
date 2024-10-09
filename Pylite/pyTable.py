@@ -47,20 +47,12 @@ class Table:
                 else:
                     v.Add(v.Type())
     
-    def Select(self, what = None,where=None):
+    def Select(self,condition):
         ReturnTable = Table("Selected Table")
-        if what == None and where == None:
-            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in self.Columns.keys()]
-            [v.Add(*self.Columns[k].Data) for k,v in ReturnTable.Columns.items()]
-        
-        if where == None:
-            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in what]
-            [v.Add(*self.Columns[k].Data) for k,v in ReturnTable.Columns.items()]
-            
-        if where != None:
-            [ReturnTable.AddColumn(**{c: self.Columns[c].Type}) for c in what]
-            [ReturnTable.Columns[i].Add(*[self.Columns[i].Data[j] for j in range(len(where)) if where[j]]) for i in ReturnTable.Columns]
-                        
+        ReturnTable.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
+        for i in range(self.RowCount):
+            if condition[i]:
+                ReturnTable.Insert(**{k:self.Rows[i][j] for j,k in enumerate(self.Columns.keys())})
         return ReturnTable
 
     def Delete(self,index=None,where=None):
