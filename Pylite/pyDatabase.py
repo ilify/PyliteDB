@@ -6,14 +6,14 @@ from .pyTable import Table
 from .pyTools import *
 
 class Database():
-    def __init__(self,path="",key=""):
+    def __init__(self,path="",password="",autoSave=False,Debug=False):
         self.path = path
-        self.key = key
+        self.password = password
         self.Tables = {}
         if path != "":
             try:
-                with open(path,"r",encoding="UTF16") as f:
-                    data = json.loads(Decrypt(f.read(),self.key))
+                with open(path,"r") as f:
+                    data = json.loads(decrypt(f.read(),self.password))
                     for k,v in data["Tables"].items():
                         t = self.CreateTable(k)
                         for c in v["Columns"].keys():
@@ -21,7 +21,7 @@ class Database():
                             t.Columns[c].Data = v["Columns"][c]["Data"]
             except FileNotFoundError:
                 raise FileNotFoundError(f"File '{path}' not found.")
-            except json.JSONDecodeError:
+            except Exception as e:
                 raise Exception("Incorrect Password")
         
     
@@ -32,7 +32,7 @@ class Database():
     
     def CreateTable(self,TableName) -> Table:
         self.Tables[TableName] = Table(TableName)
-        self.add_property(TableName)
+        setattr(self.__class__, TableName, property(lambda self: self.Tables[TableName]))
         return self.Tables[TableName]
     
     def RenameTable(self,OldName,NewName):
@@ -48,10 +48,10 @@ class Database():
     def __len__(self) -> int:
         return len(self.Tables.keys())
     
-    def add_property(self, name):
-        setattr(self.__class__, name, property(lambda self: self.Tables[name]))
-    
-    def Save(self,Path):
+    def Save(self,Path,Password=""):
+        if Password != "":
+            self.password = Password
+            
         file = json.dumps({
             "Tables": {k:{
                 "Columns":{c:{
@@ -61,8 +61,8 @@ class Database():
                     } for c in v.Columns.keys()}
                 } for k,v in self.Tables.items()}
         })
-        with open(Path,"w",encoding="UTF16") as f:
-            f.write(Crypt(file,self.key))
+        with open(Path,"w") as f:
+            f.write(encrypt(file,self.password))
         
     @staticmethod
     def Load(path):

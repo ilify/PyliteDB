@@ -99,6 +99,19 @@ class Table:
         ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
         return ret
     
+    @property
+    def Rows(self) -> list:
+        return [[col.Data[i] for col in self.Columns.values()] for i in range(len(self.Columns[list(self.Columns.keys())[0]].Data))]
+    
+    def Exists(self, **columns: Union[list, Type]) -> bool:
+        for k,v in columns.items():
+            if k not in self.Columns.keys():return False
+            if v not in self.Columns[k].Data:return False
+        return True
+    
+    @property
+    def RowCount(self) -> int:
+        return len(self.Rows)
     
     def serialize(self) -> str:
         """
