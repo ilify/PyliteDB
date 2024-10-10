@@ -35,17 +35,9 @@ class Table:
     def Insert(self, **columns: Union[list, Type]):
         for k,v in self.Columns.items():
             if k in list(columns.keys()):
-                if "Unique" in v.Options and columns[k] in v.Data:
-                    raise ValueError(f"Value '{columns[k]}' already exists in '{k}' column with Unique Option.")
                 v.Add(v.Type(columns[k]))
             else:
-                if "AutoIncrement" in v.Options:
-                    try:
-                        v.Add(v.Type(max(v.Data)+1))
-                    except:
-                        v.Add(v.Type())
-                else:
-                    v.Add(v.Type())
+                v.Add(v.Type())
     
     def Select(self,condition):
         ReturnTable = Table("Selected Table")
@@ -111,7 +103,7 @@ class Table:
         """
         return json.dumps({
             "Columns": {k:{
-                    "type": v.Type.__name__,
+                    "type": v.Type,
                     "data": v.Data,
                     "options": v.Options
                 } for k,v in self.Columns.items()}

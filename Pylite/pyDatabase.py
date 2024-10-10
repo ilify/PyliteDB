@@ -6,29 +6,25 @@ from .pyTable import Table
 from .pyTools import *
 
 class Database():
-    def __init__(self,path="",password="",autoSave=False,Debug=False):
-        self.path = path
-        self.password = password
+    def __init__(self,path="",password=""):
         self.Tables = {}
         if path != "":
+            self.path = path
+            self.password = password
             try:
-                with open(path,"r") as f:
-                    data = json.loads(decrypt(f.read(),self.password))
-                    for k,v in data["Tables"].items():
-                        t = self.CreateTable(k)
-                        for c in v["Columns"].keys():
-                            t.Columns[c] = Column(v["Columns"][c]["Type"],v["Columns"][c]["Options"])
-                            t.Columns[c].Data = v["Columns"][c]["Data"]
+                self.Load()
             except FileNotFoundError:
                 raise FileNotFoundError(f"File '{path}' not found.")
             except Exception as e:
-                raise Exception("Incorrect Password")
-        
+                raise SystemExit(f"Incorrect Password")
     
     def __getattr__(self, name: str) -> Optional[Table]:
         if name in self.Tables:
             return self.Tables[name]
         raise AttributeError(f"Table '{name}' not found.")
+    
+    def GetTables(self):
+        return list(self.Tables.keys())
     
     def CreateTable(self,TableName) -> Table:
         self.Tables[TableName] = Table(TableName)
@@ -48,10 +44,19 @@ class Database():
     def __len__(self) -> int:
         return len(self.Tables.keys())
     
+    def Load(self):
+        with open(self.path,"r") as f:
+            data = json.loads(decrypt(f.read(),self.password))
+            for k,v in data["Tables"].items():
+                t = self.CreateTable(k)
+                for c in v["Columns"].keys():
+                    
+                    t.Columns[c] = Column(eval(v["Columns"][c]["Type"]),v["Columns"][c]["Options"])
+                    t.Columns[c].Data = v["Columns"][c]["Data"]
+    
     def Save(self,Path,Password=""):
         if Password != "":
             self.password = Password
-            
         file = json.dumps({
             "Tables": {k:{
                 "Columns":{c:{
@@ -64,17 +69,10 @@ class Database():
         with open(Path,"w") as f:
             f.write(encrypt(file,self.password))
         
-    @staticmethod
-    def Load(path):
-        with open(path,"r") as f:
-            data = json.loads(f.read())
-            db = Database()
-            for k,v in data["Tables"].items():
-                t = db.CreateTable(k)
-                for c in v["Columns"].keys():
-                    t.Columns[c] = Column(v["Columns"][c]["Type"],v["Columns"][c]["Options"])
-                    # t.AddColumn(c,eval(v["Columns"][c]["Type"]),v["Columns"][c]["Options"])
-                    t.Columns[c].Data = v["Columns"][c]["Data"]
-        return db
+    def ChangePassword(self,Password):
+        self.password = Password
+        self.Save(self.path,Password)
+        
+
             
     
