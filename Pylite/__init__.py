@@ -1,8 +1,8 @@
 # __init__.py
 
-from .pyTable import Table 
-from .pyDatabase import Database 
-from .pyColumn import Column
+from .Table import Table 
+from .Database import Database 
+from .Column import Column
 
 # Optional: Metadata
 __version__ = "0.1.0"

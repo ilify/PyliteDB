@@ -1,10 +1,13 @@
 import json
-from .pyColumn import Column
-from typing import Optional, Union, Type
+from .Column import Column
+from typing import Optional, Union, Type, Callable
+
 class Table:
     PrintPadding = 1
-    def __init__(self, TableName):
+    def __init__(self, TableName,SaveCallback=None):
         self.Columns: dict[str, Column] = {}
+        self.TableName = TableName
+        self.Save = SaveCallback
 
     def __getitem__(self, Key) -> Column:
         return self.Columns[Key]
@@ -13,24 +16,27 @@ class Table:
         if name in self.Columns:
             return self.Columns[name]
         raise AttributeError(f"Column '{name}' not found.")
-    
 
-    def AddColumn(self,**columns: Union[list, Type]):
+    def AddColumn(self, **columns: Union[list, Type]):
         for ColumnName, ColumnData in columns.items():
             if isinstance(ColumnData, list):
-                self.Columns[ColumnName] = Column(ColumnData[0], ColumnData[1:])
+                self.Columns[ColumnName] = Column(ColumnData[0], ColumnData[1:], self.Save)
             elif isinstance(ColumnData, type):
-                self.Columns[ColumnName] = Column(ColumnData, [])
+                self.Columns[ColumnName] = Column(ColumnData, [], self.Save)
             setattr(self.__class__, ColumnName, property(lambda self, name=ColumnName: self.Columns[name]))
+        self.Save()
 
     def RenameColumn(self, OldName, NewName):
         self.Columns[NewName] = self.Columns.pop(OldName)
         setattr(self.__class__, NewName, property(lambda self, name=NewName: self.Columns[name]))
         delattr(self.__class__, OldName)
+        self.Save()
         
     def RemoveColumn(self, ColumnName):
         del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
+        self.Save()
+        
         
     def Insert(self, **columns: Union[list, Type]):
         for k,v in self.Columns.items():
@@ -38,6 +44,23 @@ class Table:
                 v.Add(v.Type(columns[k]))
             else:
                 v.Add(v.Type())
+        self.Save()
+
+    # @NotImplemented    
+    # def InsertObject(self,obj):
+    #     print(obj.__dict__)
+    #     try:
+    #         for k,v in self.Columns.items():
+    #             if k in obj.__dict__.keys():
+    #                 v.Add(v.Type(obj.__dict__[k]))
+    #             else:
+    #                 v.Add(v.Type())
+    #     except Exception as e:
+    #         print(f"Error: {e}")    
+    #     self.Save()
+
+            
+                
     
     def Select(self,condition):
         ReturnTable = Table("Selected Table")
@@ -55,7 +78,8 @@ class Table:
             [v.RemoveAt(index) for v in self.Columns.values()]
         if where != None:
             [x.RemoveByList(where) for x in self.Columns.values()]
-            
+        self.Save()
+        
 
     def Update(self, index=None, where=None, **columns: Union[list, Type]):
         if index == None and where == None:
@@ -68,6 +92,9 @@ class Table:
                 for i in range(len(where)):
                     if where[i]:
                         self.Columns[k].Data[i] = v
+        self.Save()
+
+        
 
     def isEmpty(self) -> bool:
         return all([col.isEmpty() for col in self.Columns.values()])
@@ -87,6 +114,9 @@ class Table:
     def Rows(self) -> list:
         return [[col.Data[i] for col in self.Columns.values()] for i in range(len(self.Columns[list(self.Columns.keys())[0]].Data))]
     
+    def GetColumns(self) -> list:
+        return list(self.Columns.keys())
+    
     def Exists(self, **columns: Union[list, Type]) -> bool:
         for k,v in columns.items():
             if k not in self.Columns.keys():return False
@@ -97,26 +127,7 @@ class Table:
     def RowCount(self) -> int:
         return len(self.Rows)
     
-    def serialize(self) -> str:
-        """
-        Serializes the Table object to a JSON string.
-        """
-        return json.dumps({
-            "Columns": {k:{
-                    "type": v.Type,
-                    "data": v.Data,
-                    "options": v.Options
-                } for k,v in self.Columns.items()}
-        })
-    @staticmethod
-    def deserialize(json_data: str) -> 'Column':
-        """
-        Deserializes a JSON string to a Table object.
-        """
-        data = json.loads(json_data)
-        t = Table()
-        for k,v in data["Columns"].items():
-            t.Columns[k] = Column(v["type"], v["options"])
-            t.Columns[k].Data = v["data"]
-        return t
     
+    
+    def toJson(self):
+        return {"Columns":{k:v.toJson() for k,v in self.Columns.items()}}

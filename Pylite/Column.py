@@ -1,14 +1,15 @@
-from typing import Type
+from typing import Type, Callable, Optional
 import json
 import re
 
 class Column:
-    def __init__(self, ctype: Type, options=None) -> None:
+    def __init__(self, ctype: Type, options=None, autosave_callback: Optional[Callable] = None) -> None:
         if options is None:
             options = []
         self.Type: Type = ctype
         self.Data: list = []
         self.Options: list[str] = options
+        self.Save = autosave_callback
 
     def __gt__(self, other) -> list:
         return [value > other for value in self.Data]
@@ -42,24 +43,31 @@ class Column:
             if not isinstance(value, self.Type) and value is not None:
                 raise ValueError(f"Value {value} is not of type {self.Type}")
             self.Data.append(value)
+        self.Save()
 
     def RemoveFirst(self) -> None:
         self.Data.pop(0)
+        self.Save()
 
     def RemoveLast(self) -> None:
         self.Data.pop()
+        self.Save()
 
     def RemoveAll(self, value) -> None:
         self.Data = [i for i in self.Data if i != value]
+        self.Save()
 
     def RemoveAt(self, index) -> None:
         self.Data.pop(index)
+        self.Save()
 
     def RemoveIf(self, func) -> None:
         self.Data = [i for i in self.Data if not func(i)]
+        self.Save()
 
     def RemoveByList(self, values) -> None:
         self.Data = [self.Data[i] for i in range(len(self.Data)) if not values[i]]
+        self.Save()
 
     def GetIf(self, func) -> list:
         return [i for i in self.Data if func(i)]
@@ -69,14 +77,17 @@ class Column:
 
     def Apply(self, func) -> None:
         self.Data = list(map(func, self.Data))
+        self.Save()
 
     def ApplyIf(self, func, condition) -> None:
         self.Data = [func(i) if condition(i) else i for i in self.Data]
+        self.Save()
 
     def ReType(self, newType: Type) -> None:
         try:
             self.Data = [newType(i) for i in self.Data]
             self.Type = newType
+            self.Save()
         except Exception as e:
             raise ValueError(f"Cannot convert to {newType}: {e}")
 
@@ -90,27 +101,5 @@ class Column:
             data += f"{str(i).ljust(max_len)} | {self.Data[i]}\n"
         return f"Column {self.Type.__name__} with {len(self)} elements \n{data[:-1] if data else 'Empty'}"
 
-    def serialize(self) -> str:
-        """
-        Serializes the Column object to a JSON string.
-        """
-        return json.dumps({
-            'type': self.Type.__name__,  # Store the type name as a string
-            'data': self.Data,
-            'options': self.Options
-        })
-
-    @staticmethod
-    def deserialize(json_data: str) -> 'Column':
-        """
-        Deserializes a JSON string to a Column object.
-        """
-        data = json.loads(json_data)
-        type_map = {'int': int, 'float': float, 'str': str, 'bool': bool}
-        column_type = type_map.get(data['type'])
-        if column_type is None:
-            raise ValueError(f"Unsupported type: {data['type']}")
-        column = Column(column_type)
-        column.Data = data['data']
-        column.Options = data['options']
-        return column
+    def toJson(self):
+        return {"Type":self.Type.__name__,"Data":self.Data,"Options":self.Options}
