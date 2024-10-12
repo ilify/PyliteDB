@@ -53,19 +53,29 @@ class Database():
         return len(self.Tables.keys())
     
     def Load(self):
+        print(f"Loading Database at {self.path} . . .")
+        wasOnAutoSave = self.autosave
+        self.autosave = False
+        fromJson = False
+        if self.password == "" : fromJson = True
         try:
             with open(self.path,"r") as f:
-                data = json.loads(decrypt(f.read(),self.password))
+                if fromJson:
+                    data = json.loads(f.read())
+                else:
+                    data = json.loads(decrypt(f.read(),self.password))
                 print(data)
                 for k,v in data["Tables"].items():
                     t = self.CreateTable(k)
                     for c in v["Columns"].keys():
                         t.Columns[c] = Column(eval(v["Columns"][c]["Type"]),v["Columns"][c]["Options"])
                         t.Columns[c].Data = v["Columns"][c]["Data"]
-        except:
+            self.autosave = wasOnAutoSave
+        except Exception as e:
             raise SystemExit("Error while Loading Database : Incorrect Password" if self.password != "" else "Error while Loading Database : Database is Locked - Please Make Sure You Provide a Password :\n Database(Path,YOUR_PASSWORD_HERE)")
     
-    def Save(self,Path="",Password=""):
+    def Save(self,Path="",Password="",asJson=False):
+        print("saving")
         if self.path == "" and Path == "":
             raise SystemExit("Error while Saving Database : No path provided")
         
@@ -76,7 +86,10 @@ class Database():
         
         file = json.dumps(self.toJson())
         with open(self.path,"w") as f:
-            f.write(encrypt(file,self.password))
+            if asJson:
+                f.write(file)
+            else:
+                f.write(encrypt(file,self.password))
         
     def ChangePassword(self,Password):
         self.password = Password
@@ -85,6 +98,7 @@ class Database():
         if self.autosave: self.Save()
             
     def toJson(self):
-        return {"Tables":{k:v.toJson() for k,v in self.Tables.items()}}
+        Tables = {k:v.toJson() for k,v in self.Tables.items()}
+        return {"Tables":Tables }
             
     

@@ -15,6 +15,5 @@ def LoadDatabase():
     db = Database(Path="Database.pylite",Password="password",AutoSave=True)
     print(db.Users)
 
-CreateDatabase()
 LoadDatabase()
 
