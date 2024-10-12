@@ -1,0 +1,65 @@
+@font-face {
+  font-family: "Cursive";
+  src: url("/PyliteBrowser/Assets/Fonts/Blacksword.otf");
+}
+@font-face {
+    font-family: "Croga";
+    src: url("/PyliteBrowser/Assets/Fonts/Croogla4F.ttf");
+}
+@font-face {
+    font-family: "Versel";
+    src: url("/PyliteBrowser/Assets/Fonts/Versel.woff2");
+}
+@font-face {
+  font-family: "Typo";
+  src: url("/PyliteBrowser/Assets/Fonts/TypoRegular.otf");
+}
+@font-face {
+  font-family: "Typo++";
+  src: url("/PyliteBrowser/Assets/Fonts/TypoBlack.otf");
+}
+@font-face {
+  font-family: "Typo-";
+  src: url("/PyliteBrowser/Assets/Fonts/TypoLight.otf");
+}
+@font-face {
+  font-family: "Typo+";
+  src: url("/PyliteBrowser/Assets/Fonts/TypoBold.otf");
+}
+@font-face {
+  font-family: "Milk+";
+  src: url("/PyliteBrowser/Assets/Fonts/Lemon Milk-Pro-Medium.otf");
+}
+@font-face {
+  font-family: "Milk++";
+  src: url("/PyliteBrowser/Assets/Fonts/Lemon-Milk-Pro-Bold.otf");
+}
+@font-face {
+  font-family: "Milk-";
+  src: url("/PyliteBrowser/Assets/Fonts/Lemon\ Milk-Pro-Ultra-Light.otf");
+}
+@font-face {
+  font-family: "Milk";
+  src: url("/PyliteBrowser/Assets/Fonts/Lemon-Milk-Pro-Regular.otf");
+}
+@font-face {
+  font-family: "Code";
+  src: url("/PyliteBrowser/Assets/Fonts/JetBrainsMono_Regular.woff2");
+}
+@font-face {
+  font-family: "fonto";
+  src: url("/PyliteBrowser/Assets/Fonts/monofonto.otf");
+}
+@font-face {
+  font-family: "Slice";
+  src: url("/PyliteBrowser/Assets/Fonts/Slice.woff2");
+}
+@font-face {
+  font-family: Flags;
+  unicode-range: U+1F1E6-1F1FF;
+  src: url("/PyliteBrowser/Assets/Fonts/NotoColorEmoji.ttf");
+}
+@font-face {
+  font-family: 'Figtree';
+  src: url("/PyliteBrowser/Assets/Fonts/Figtree-Regular.ttf")
+}

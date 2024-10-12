@@ -105,9 +105,9 @@ class Table:
         def formatCell(cell, maxLen):return f" {cell} {' '*(maxLen-len(str(cell)))}"
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
-        ret = f"Table:\n"
+        ret = f"{self.TableName}:\n"
         ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
-        ret +=  "| "+" |\n| ".join("|".join(formatCell(col.Data[i], maxLen) for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
+        ret +=  "| "+" |\n| ".join("|".join((formatCell(col.Data[i], maxLen) if col.Type!=bytes else "BLOB") for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
         return ret
     
     @property

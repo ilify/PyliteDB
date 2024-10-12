@@ -1,6 +1,6 @@
 import json
 from typing import Optional
-
+import sqlite3
 from Pylite.Column import Column
 from .Table import Table
 from .Tools import *
@@ -18,7 +18,7 @@ class Database():
                 raise FileNotFoundError(f"File '{self.path}' not found.")
             except Exception as e:
                 raise e
-            
+        
     
     def GetTables(self):
         return list(self.Tables.keys())
@@ -53,7 +53,6 @@ class Database():
         return len(self.Tables.keys())
     
     def Load(self):
-        print(f"Loading Database at {self.path} . . .")
         wasOnAutoSave = self.autosave
         self.autosave = False
         fromJson = False
@@ -64,7 +63,6 @@ class Database():
                     data = json.loads(f.read())
                 else:
                     data = json.loads(decrypt(f.read(),self.password))
-                print(data)
                 for k,v in data["Tables"].items():
                     t = self.CreateTable(k)
                     for c in v["Columns"].keys():
@@ -74,8 +72,28 @@ class Database():
         except Exception as e:
             raise SystemExit("Error while Loading Database : Incorrect Password" if self.password != "" else "Error while Loading Database : Database is Locked - Please Make Sure You Provide a Password :\n Database(Path,YOUR_PASSWORD_HERE)")
     
+    
+    def LoadFromSQL(self,SQLFilePath):
+        SQL_TYPE_MAP = {
+            "INTEGER":int,
+            "REAL":float,
+            "TEXT":str,
+            "BLOB":bytes
+        }
+        conn = sqlite3.connect(SQLFilePath)
+        c = conn.cursor()
+        c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [x[0] for x in c.fetchall() if x[0] != "sqlite_sequence"]
+        for table in tables:
+            t = self.CreateTable(table)
+            c.execute(f"PRAGMA table_info({table})")
+            columns = {x[1]:SQL_TYPE_MAP[x[2]] for x in c.fetchall()}
+            t.AddColumn(**columns)
+            for column in columns:
+                t.Columns[column].Data = [x[0] for x in c.execute(f"SELECT {column} FROM {table}").fetchall()]
+        conn.close()
+    
     def Save(self,Path="",Password="",asJson=False):
-        print("saving")
         if self.path == "" and Path == "":
             raise SystemExit("Error while Saving Database : No path provided")
         

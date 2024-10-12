@@ -3,7 +3,7 @@ import json
 import re
 
 class Column:
-    def __init__(self, ctype: Type, options=None, autosave_callback: Optional[Callable] = None) -> None:
+    def __init__(self, ctype: Type, options=None, autosave_callback = None) -> None:
         if options is None:
             options = []
         self.Type: Type = ctype
