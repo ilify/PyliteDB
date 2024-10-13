@@ -66,7 +66,7 @@ class Database():
                 for k,v in data["Tables"].items():
                     t = self.CreateTable(k)
                     for c in v["Columns"].keys():
-                        t.Columns[c] = Column(eval(v["Columns"][c]["Type"]),v["Columns"][c]["Options"])
+                        t.Columns[c] = Column(eval(v["Columns"][c]["Type"]),v["Columns"][c]["Options"],self.Save)
                         t.Columns[c].Data = v["Columns"][c]["Data"]
             self.autosave = wasOnAutoSave
         except Exception as e:

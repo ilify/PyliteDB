@@ -9,6 +9,7 @@ class Table:
         self.TableName = TableName
         self.Save = SaveCallback
 
+        
     def __getitem__(self, Key) -> Column:
         return self.Columns[Key]
 
@@ -20,22 +21,23 @@ class Table:
     def AddColumn(self, **columns: Union[list, Type]):
         for ColumnName, ColumnData in columns.items():
             if isinstance(ColumnData, list):
-                self.Columns[ColumnName] = Column(ColumnData[0], ColumnData[1:], self.Save)
+                self.Columns[ColumnName] = Column(ColumnData[0], ColumnData[1:],self.Save)
             elif isinstance(ColumnData, type):
-                self.Columns[ColumnName] = Column(ColumnData, [], self.Save)
-            setattr(self.__class__, ColumnName, property(lambda self, name=ColumnName: self.Columns[name]))
-        self.Save()
+                self.Columns[ColumnName] = Column(ColumnData, [],self.Save)
+            setattr(self.__class__, ColumnName, property(lambda self: self.Tables[ColumnName]))
+            
+        if self.Save != None : self.Save()
 
     def RenameColumn(self, OldName, NewName):
         self.Columns[NewName] = self.Columns.pop(OldName)
-        setattr(self.__class__, NewName, property(lambda self, name=NewName: self.Columns[name]))
+        setattr(self.__class__, NewName, property(lambda self: self.Columns[NewName]))
         delattr(self.__class__, OldName)
-        self.Save()
+        if self.Save != None : self.Save()
         
     def RemoveColumn(self, ColumnName):
         del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
-        self.Save()
+        if self.Save != None : self.Save()
         
         
     def Insert(self, **columns: Union[list, Type]):
@@ -44,7 +46,7 @@ class Table:
                 v.Add(v.Type(columns[k]))
             else:
                 v.Add(v.Type())
-        self.Save()
+        if self.Save != None : self.Save()
 
     # @NotImplemented    
     # def InsertObject(self,obj):
@@ -57,7 +59,7 @@ class Table:
     #                 v.Add(v.Type())
     #     except Exception as e:
     #         print(f"Error: {e}")    
-    #     self.Save()
+    #     if self.Save != None : self.Save()
 
             
                 
@@ -78,7 +80,7 @@ class Table:
             [v.RemoveAt(index) for v in self.Columns.values()]
         if where != None:
             [x.RemoveByList(where) for x in self.Columns.values()]
-        self.Save()
+        if self.Save != None : self.Save()
         
 
     def Update(self, index=None, where=None, **columns: Union[list, Type]):
@@ -92,7 +94,7 @@ class Table:
                 for i in range(len(where)):
                     if where[i]:
                         self.Columns[k].Data[i] = v
-        self.Save()
+        if self.Save != None : self.Save()
 
         
 

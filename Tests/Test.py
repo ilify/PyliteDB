@@ -19,7 +19,4 @@ def CreateFromSQL():
 
 # CreateFromSQL()
 db = Database(Path="Database.pylite",Password="password",AutoSave=True)
-Accounts : Table = db.Accounts
-# Accounts.Delete(Accounts.RowCount-1)
-print(Accounts.Select(Accounts.Email.match(".*@gmail.com")))
-
+print(db.Accounts.Select(db.Accounts.ID > 0))

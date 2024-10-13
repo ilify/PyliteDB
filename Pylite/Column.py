@@ -10,6 +10,7 @@ class Column:
         self.Data: list = []
         self.Options: list[str] = options
         self.Save = autosave_callback
+        
 
     def __gt__(self, other) -> list:
         return [value > other for value in self.Data]
@@ -43,31 +44,31 @@ class Column:
             if not isinstance(value, self.Type) and value is not None:
                 raise ValueError(f"Value {value} is not of type {self.Type}")
             self.Data.append(value)
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveFirst(self) -> None:
         self.Data.pop(0)
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveLast(self) -> None:
         self.Data.pop()
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveAll(self, value) -> None:
         self.Data = [i for i in self.Data if i != value]
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveAt(self, index) -> None:
         self.Data.pop(index)
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveIf(self, func) -> None:
         self.Data = [i for i in self.Data if not func(i)]
-        self.Save()
+        if self.Save != None : self.Save()
 
     def RemoveByList(self, values) -> None:
         self.Data = [self.Data[i] for i in range(len(self.Data)) if not values[i]]
-        self.Save()
+        if self.Save != None : self.Save()
 
     def GetIf(self, func) -> list:
         return [i for i in self.Data if func(i)]
@@ -77,17 +78,17 @@ class Column:
 
     def Apply(self, func) -> None:
         self.Data = list(map(func, self.Data))
-        self.Save()
+        if self.Save != None : self.Save()
 
     def ApplyIf(self, func, condition) -> None:
         self.Data = [func(i) if condition(i) else i for i in self.Data]
-        self.Save()
+        if self.Save != None : self.Save()
 
     def ReType(self, newType: Type) -> None:
         try:
             self.Data = [newType(i) for i in self.Data]
             self.Type = newType
-            self.Save()
+            if self.Save != None : self.Save()
         except Exception as e:
             raise ValueError(f"Cannot convert to {newType}: {e}")
 
