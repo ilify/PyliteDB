@@ -1,30 +1,73 @@
-# PyLite
+# 🚀 **PyLite**
 
-**Pylite** is a lightweight, Python-based database library , It allows for efficient data manipulation and querying while maintaining simplicity and ease of use. Designed for small to medium-sized projects.
+**PyLite** is a **lightweight database** built in Python 🐍, designed to be **super easy to use**, beginner-friendly 🎓, and **production-ready**! With **PyLite**, you can seamlessly perform essential database operations like **Insert**, **Select**, **Update**, and **Delete** using intuitive, Pythonic syntax. Perfect for both **learning** 📚 and **real-world** projects 🏗️!
 
-## Features
+### 💡 **Why Choose PyLite?**
+- ❌ **0 Extra Code**
+- ❌ **0 Complex Configurations**
+- 🔄 **Built-in Converter** from SQL databases (using `sqlite3`)
+- ⚙️ **1 Config File** to get started in no time
+- 🧠 **Tightly Integrated** with Python
+- 🌐 **Built-in DataBrowser** (Web-based) — use it **Standalone** or **Host** it!
 
-- **Lightweight and Simple**: Minimal setup and configuration needed.
+## 🚀 **Getting Started**
+#### ⚙️ Instalation
 
-## Usage
 
-# Column
+```bash
+pip install git+https://github.com/ilify/Pylite.git
+```
 
-<details>
-<summary>Methods</summary>
+#### 📚 Usage Without Config File
 
-| Method                   | Description                                                                                                                                              |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Add(value)`             | Adds a single value of the correct type to the column.                                                                                                   |
-| `AddAll(*values)`        | Adds multiple values at once to the column.                                                                                                              |
-| `Get(index)`             | Returns the value at the specified index.                                                                                                                |
-| `RemoveFirst()`          | Removes the first element from the column.                                                                                                               |
-| `RemoveLast()`           | Removes the last element from the column.                                                                                                             |
-| `RemoveAll(value)`       | Removes all occurrences of the specified value from the column.                                                                                        |
-| `RemoveAt(index)`        | Removes the element at the specified index.                                                                                                           |
-| `Removeif(func)`         | Removes elements that satisfy the condition defined in the provided function.                                                                          |
-| `Getif(func)`            | Retrieves all elements that satisfy the condition defined in the provided function.                                                                    |
-| `between(start, end)`    | Checks which values are within the specified range (inclusive).                                                                                      |
-| `Apply(func)`            | Applies a function to each element in the column.                                                                                                      |
+* Converting SQL to PYLITE Database
+```python
+from Pylite import Database
+db = Database()
+db.LoadFromSQL("SLQ_FILE_PATH")
+db.Save("SAVE_LOCATION","YOUR_PASSWORD")
+```
 
-</details>
+* Loading Database
+```python
+from Pylite import Database
+db = Database("SAVE_LOCATION","YOUR_PASSWORD",AutoSave=True)
+```
+
+#### 📚 Usage With Config File
+Config Files are just python scripts to iniialize the database and create Tables shortcuts and more ...
+
+
+Create a Config file `Database.py`
+
+
+```python
+from Pylite import Database
+# DO NOT LEAVE PASSWORD HERE FOR PRODUCTION
+# MAKE SURE YOU ADD YOUR PASSWORD TO ENVIRENMENT VARIABLES
+# THIS IS JUST TO GET YOU STARTED
+password = "YOUR_PASSWORD"                      # Your Password
+path     = "PYLITE_FILE_PATH"                     # Where The Database is Loacated
+Database = Database(Path=path,Password=password,AutoSave=True) # This will Connect to the database
+# Table Shortcuts (Optional)
+Accounts = Database.Accounts #Examples
+```
+
+Now Go to the script you Want to use pylite in for example `app.py`
+
+```python
+from Database import Accounts #Import Tables Directly
+
+#Example Functions
+def Login(Email,Password):
+    return Accounts.Exists(
+        Email    = Email ,
+        Password = Password
+    )
+
+def SignUp(Email,Password):
+    return Accounts.Insert(
+        Email    = Email ,
+        Password = Password
+    )
+```
