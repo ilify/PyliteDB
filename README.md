@@ -18,7 +18,7 @@
 pip install git+https://github.com/ilify/Pylite.git
 ```
 
-#### 📚 Usage Without Config File
+## 📚 Usage Without Config File
 
 * Converting SQL to PYLITE Database
 ```python
@@ -34,7 +34,7 @@ from Pylite import Database
 db = Database("SAVE_LOCATION","YOUR_PASSWORD",AutoSave=True)
 ```
 
-#### 📚 Usage With Config File
+## 📚 Usage With Config File
 Config Files are just python scripts to iniialize the database and create Tables shortcuts and more ...
 
 
@@ -43,12 +43,10 @@ Create a Config file `Database.py`
 
 ```python
 from Pylite import Database
-# DO NOT LEAVE PASSWORD HERE FOR PRODUCTION
-# MAKE SURE YOU ADD YOUR PASSWORD TO ENVIRENMENT VARIABLES
-# THIS IS JUST TO GET YOU STARTED
-password = "YOUR_PASSWORD"                      # Your Password
-path     = "PYLITE_FILE_PATH"                     # Where The Database is Loacated
-Database = Database(Path=path,Password=password,AutoSave=True) # This will Connect to the database
+
+password = "YOUR_PASSWORD"
+path     = "PYLITE_FILE_PATH" 
+Database = Database(Path=path,Password=password,AutoSave=True)
 # Table Shortcuts (Optional)
 Accounts = Database.Accounts #Examples
 ```
@@ -71,3 +69,4 @@ def SignUp(Email,Password):
         Password = Password
     )
 ```
+

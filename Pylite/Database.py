@@ -119,4 +119,16 @@ class Database():
         Tables = {k:v.toJson() for k,v in self.Tables.items()}
         return {"Tables":Tables }
             
-    
+    def __str__(self):
+        indexes = iter(range(0, len(self.GetTables())))
+        tables_list = "\n ".join([f"{next(indexes)} - {table}" for table in self.GetTables()])
+        print(f"Database '{self.path}' Contains {len(self)} Tables :\n {tables_list}")
+        TableToPrint = input("Select Table To Display (use index or name) : ")
+        try :
+            index = int(TableToPrint)
+            Table = self.GetTables()[index]
+            print(self.Tables[Table])
+        except :
+            print(self.Tables[TableToPrint])
+            
+        return "\b"

@@ -19,4 +19,4 @@ def CreateFromSQL():
 
 # CreateFromSQL()
 db = Database(Path="Database.pylite",Password="password",AutoSave=True)
-print(db.Accounts.Select(db.Accounts.ID > 0))
+print(db)
