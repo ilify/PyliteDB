@@ -1,4 +1,5 @@
 import json
+from re import T
 from typing import Optional
 import sqlite3
 from Pylite.Column import Column
@@ -18,7 +19,14 @@ class Database():
                 raise FileNotFoundError(f"File '{self.path}' not found.")
             except Exception as e:
                 raise e
-        
+    
+    def __getitem__(self, Key) -> Table:
+        return self.Tables[Key]
+    
+    def __getattr__(self, name: str) -> Optional[Table]:
+        if name in self.Columns:
+            return self.Columns[name]
+        raise AttributeError(f"Table '{name}' not found.")
     
     def GetTables(self):
         return list(self.Tables.keys())

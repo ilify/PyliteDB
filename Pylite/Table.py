@@ -85,7 +85,8 @@ class Table:
 
     def Update(self, index=None, where=None, **columns: Union[list, Type]):
         if index == None and where == None:
-            raise ValueError("Please provide either index or where condition.")
+            for k,v in columns.items():
+                self.Columns[k].Data = [v for _ in self.Columns[k].Data]
         if index != None:
             for k,v in columns.items():
                 self.Columns[k].Data[index] = v
@@ -108,8 +109,8 @@ class Table:
         maxLenperColumn = [max(getMaxLength(col), len(key))+self.PrintPadding for col, key in zip(self.Columns.values(), self.Columns.keys())]
         numberOfLines = max([len(col.Data) for col in self.Columns.values()])
         ret = f"{self.TableName}:\n"
-        ret += "| "+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + " |\n"
-        ret +=  "| "+" |\n| ".join("|".join((formatCell(col.Data[i], maxLen) if col.Type!=bytes else "BLOB") for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + " |"
+        ret += "|"+"|".join([formatCell(list(self.Columns.keys())[i], maxLenperColumn[i]) for i in range(len(self.Columns))]) + "|\n"
+        ret +=  "|"+"|\n|".join("|".join((formatCell(col.Data[i], maxLen) if col.Type!=bytes else "BLOB") for col, maxLen in zip(self.Columns.values(), maxLenperColumn)) for i in range(numberOfLines)) + "|"
         return ret
     
     @property
@@ -129,7 +130,28 @@ class Table:
     def RowCount(self) -> int:
         return len(self.Rows)
     
+    def Limit(self,n):
+        T = Table(self.TableName,self.Save)
+        T.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
+        for i in range(min(n,self.RowCount)):
+            T.Insert(**{k:v.Data[i] for k,v in self.Columns.items()})
+        return T
     
+    def Sort(self, Column, Reverse=False):
+        if Column not in self.Columns.keys():
+            raise ValueError(f"Column '{Column}' not found.")
+        T = self.Copy()
+        sorted_indices = sorted(range(len(T.Columns[Column].Data)), key=lambda i: T.Columns[Column].Data[i], reverse=Reverse)
+        for col in T.Columns.values():
+            col.Data = [col.Data[i] for i in sorted_indices]
+        return T
+    
+    def Copy(self):
+        T = Table(self.TableName,self.Save)
+        T.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
+        for i in range(self.RowCount):
+            T.Insert(**{k:v.Data[i] for k,v in self.Columns.items()})
+        return T
     
     def toJson(self):
         return {"Columns":{k:v.toJson() for k,v in self.Columns.items()}}
