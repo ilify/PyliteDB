@@ -3,6 +3,7 @@
 from .Table import Table 
 from .Database import Database 
 from .Column import Column
+from .Types import PyliteTypes
 
 # Optional: Metadata
 __version__ = "0.1.0"

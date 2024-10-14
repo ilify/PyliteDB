@@ -1,0 +1,2 @@
+class blob(bytes):
+    pass

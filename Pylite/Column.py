@@ -10,7 +10,7 @@ class Column:
         self.Data: list = []
         self.Options: list[str] = options
         self.Save = autosave_callback
-        
+            
 
     def __gt__(self, other) -> list:
         return [value > other for value in self.Data]

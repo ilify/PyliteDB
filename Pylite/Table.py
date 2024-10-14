@@ -1,4 +1,6 @@
 import json
+
+from regex import R
 from .Column import Column
 from typing import Optional, Union, Type, Callable
 
@@ -8,7 +10,17 @@ class Table:
         self.Columns: dict[str, Column] = {}
         self.TableName = TableName
         self.Save = SaveCallback
-
+        
+        # Events
+        self.onInsert    = None
+        self.onUpdate    = None
+        self.onDelete    = None
+        self.onRename    = None
+        self.onSelect    = None
+        self.onSort      = None
+        self.onLimit     = None
+        self.onAddColumn = None
+        self.onCopy      = None
         
     def __getitem__(self, Key) -> Column:
         return self.Columns[Key]
@@ -25,19 +37,22 @@ class Table:
             elif isinstance(ColumnData, type):
                 self.Columns[ColumnName] = Column(ColumnData, [],self.Save)
             setattr(self.__class__, ColumnName, property(lambda self: self.Tables[ColumnName]))
-            
         if self.Save != None : self.Save()
+        if self.onAddColumn != None: self.onAddColumn(self)
 
     def RenameColumn(self, OldName, NewName):
         self.Columns[NewName] = self.Columns.pop(OldName)
         setattr(self.__class__, NewName, property(lambda self: self.Columns[NewName]))
         delattr(self.__class__, OldName)
         if self.Save != None : self.Save()
+        if self.onRename != None: self.onRename(self)
         
     def RemoveColumn(self, ColumnName):
         del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
         if self.Save != None : self.Save()
+        if self.onRename != None: self.onRename(self)
+        
         
         
     def Insert(self, **columns: Union[list, Type]):
@@ -47,6 +62,7 @@ class Table:
             else:
                 v.Add(v.Type())
         if self.Save != None : self.Save()
+        if self.onInsert != None: self.onInsert(self)
 
     # @NotImplemented    
     # def InsertObject(self,obj):
@@ -64,12 +80,17 @@ class Table:
             
                 
     
-    def Select(self,condition):
+    def Select(self,condition=None) -> "Table":
+        if condition == None:
+            ret = self.Copy()
+            if self.onSelect != None: self.onSelect(ret)
+            return ret
         ReturnTable = Table("Selected Table")
         ReturnTable.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
         for i in range(self.RowCount):
             if condition[i]:
                 ReturnTable.Insert(**{k:self.Rows[i][j] for j,k in enumerate(self.Columns.keys())})
+        if self.onSelect != None: self.onSelect(ReturnTable)
         return ReturnTable
 
     def Delete(self,index=None,where=None):
@@ -81,6 +102,7 @@ class Table:
         if where != None:
             [x.RemoveByList(where) for x in self.Columns.values()]
         if self.Save != None : self.Save()
+        if self.onDelete != None: self.onDelete(self)
         
 
     def Update(self, index=None, where=None, **columns: Union[list, Type]):
@@ -96,6 +118,7 @@ class Table:
                     if where[i]:
                         self.Columns[k].Data[i] = v
         if self.Save != None : self.Save()
+        if self.onUpdate != None: self.onUpdate(self)
 
         
 
@@ -135,6 +158,7 @@ class Table:
         T.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
         for i in range(min(n,self.RowCount)):
             T.Insert(**{k:v.Data[i] for k,v in self.Columns.items()})
+        if self.onLimit != None: self.onLimit(T)
         return T
     
     def Sort(self, Column, Reverse=False):
@@ -144,6 +168,7 @@ class Table:
         sorted_indices = sorted(range(len(T.Columns[Column].Data)), key=lambda i: T.Columns[Column].Data[i], reverse=Reverse)
         for col in T.Columns.values():
             col.Data = [col.Data[i] for i in sorted_indices]
+        if self.onSort != None: self.onSort(T)
         return T
     
     def Copy(self):
@@ -151,6 +176,7 @@ class Table:
         T.Columns = {k: Column(v.Type, v.Options) for k,v in self.Columns.items()}
         for i in range(self.RowCount):
             T.Insert(**{k:v.Data[i] for k,v in self.Columns.items()})
+        if self.onCopy != None: self.onCopy(T)
         return T
     
     def toJson(self):
