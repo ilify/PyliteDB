@@ -1,2 +1,0 @@
-class image(bytes):
-    pass
