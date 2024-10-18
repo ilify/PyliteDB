@@ -15,7 +15,7 @@
 
 #### ⚙️ Instalation
 
-[View PyliteDB on pypi.org] (https://pypi.org/project/PyliteDB/)
+[View PyliteDB on pypi.org](https://pypi.org/project/PyliteDB/)
 
 ```bash
 pip install PyliteDB
