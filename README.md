@@ -15,6 +15,8 @@
 
 #### ⚙️ Instalation
 
+view on pypi `https://pypi.org/project/PyliteDB/`
+
 ```bash
 pip install PyliteDB
 ```
