@@ -1,19 +1,15 @@
-import json
-
-from regex import R
-from .Column import Column
-from .Types import *
-from typing import Optional, Union, Type, Callable
+from h11 import Data
+import pandas as pd
+from typing import Type
+from faker import Faker
 
 
 class Table:
-    PrintPadding = 1
-
     def __init__(self, TableName, SaveCallback=None):
-        self.Columns: dict[str, Column] = {}
+        self.Data = pd.DataFrame()
         self.TableName = TableName
         self.Save = SaveCallback
-
+        self.FakeData = Faker()
         # Events
         self.beforeInsert = None
         self.afterInsert = None
@@ -36,235 +32,264 @@ class Table:
         self.beforeCopy = None
         self.afterCopy = None
 
-    def __getitem__(self, Key) -> Union[list, Column]:
-        if isinstance(Key, int):
-            return self.Rows[Key]
-        return self.Columns[Key]
+    def __str__(self) -> str:
+        PrintPadding = 1
+        if self.isEmpty():
+            return f"Table '{self.TableName}' is empty."
 
-    def __getattr__(self, name: str) -> Optional[Column]:
-        if name in self.Columns:
-            return self.Columns[name]
-        raise AttributeError(f"Column '{name}' not found.")
+        # Get the max length for each column
+        # Calculate the maximum length for each column, including the column name
+        max_len_per_column = (
+            self.Data.map(lambda x: len(str(x)))
+            .max()  # Get max length of each value
+            .combine(
+                self.Data.columns.to_series().apply(len), max
+            )  # Compare with column names
+        ) + PrintPadding
+
+        # Create a dictionary with the maximum lengths per column
+        column_lengths = {
+            col: max_len for col, max_len in zip(self.Data.columns, max_len_per_column)
+        }
+
+        # Prepare header (column names)
+        header = (
+            "| "
+            + " | ".join([col.ljust(column_lengths[col]) for col in self.Data.columns])
+            + " |"
+        )
+
+        # Prepare the separator (dashes)
+        separator = (
+            "•-"
+            + "-•-".join(["-" * column_lengths[col] for col in self.Data.columns])
+            + "-•"
+        )
+
+        # Prepare rows
+        rows = ""
+        for i, row in self.Data.iterrows():
+            row_cells = [
+                str(cell).ljust(column_lengths[col]) for col, cell in row.items()
+            ]
+            rows += "| " + " | ".join(row_cells) + " |\n"
+
+        # Construct the final output
+        table_str = f"{self.TableName} ({len(self.Data)} Entries):\n"
+        table_str += separator + "\n"
+        table_str += header + "\n"
+        table_str += separator + "\n"
+        table_str += rows
+        table_str += separator
+
+        return table_str
+
+    def __getattr__(self, name):
+        if name in ["Data", "TableName", "Save", "FakeData"]:
+            return object.__getattribute__(self, name)
+        return self.Data[name]
+
+    def __getitem__(self, Key):
+        if isinstance(Key, int):
+            return self.Data.iloc[Key]
+        return self.Data[Key]
 
     def AddColumn(self, **columns: Type):
-        if self.beforeAddColumn != None:
+        if self.beforeAddColumn:
             self.beforeAddColumn(self)
         for ColumnName, ColumnType in columns.items():
-            # assert (
-            #     ColumnType in PyliteTypes.SupportedTypes
-            # ), f"Invalid type '{ColumnType}'"
-            self.Columns[ColumnName] = Column(ColumnType, [], self.Save)
+            self.Data[ColumnName] = pd.Series(dtype=ColumnType)
             setattr(
                 self.__class__,
                 ColumnName,
-                property(lambda self: self.Tables[ColumnName]),
+                property(lambda self, ColumnName=ColumnName: self.Data[ColumnName]),
             )
-        if self.Save != None:
+        if self.Save:
             self.Save()
-        if self.afterAddColumn != None:
+        if self.afterAddColumn:
             self.afterAddColumn(self)
+        return self
 
     def RenameColumn(self, OldName, NewName):
-        if self.beforeRenameColumn != None:
+        if self.beforeRenameColumn:
             self.beforeRenameColumn(self)
-        self.Columns[NewName] = self.Columns.pop(OldName)
-        setattr(self.__class__, NewName, property(lambda self: self.Columns[NewName]))
+        self.Data = self.Data.rename(columns={OldName: NewName})
+        setattr(
+            self.__class__,
+            NewName,
+            property(lambda self, NewName=NewName: self.Data[NewName]),
+        )
         delattr(self.__class__, OldName)
-        if self.Save != None:
+        if self.Save:
             self.Save()
-        if self.afterRenameColumn != None:
+        if self.afterRenameColumn:
             self.afterRenameColumn(self)
+        return self
 
     def RemoveColumn(self, ColumnName):
-        if self.beforeRemoveColumn != None:
+        if self.beforeRemoveColumn:
             self.beforeRemoveColumn(self)
-        del self.Columns[ColumnName]
         delattr(self.__class__, ColumnName)
-        if self.Save != None:
+        self.Data = self.Data.drop(columns=[ColumnName])
+        if self.Save:
             self.Save()
-        if self.afterRemoveColumn != None:
+        if self.afterRemoveColumn:
             self.afterRemoveColumn(self)
+        return self
 
-    def Insert(self, **columns: Union[list, Type]):
-        if self.beforeInsert != None:
+    def Insert(self, **columns):
+        if self.beforeInsert:
             self.beforeInsert(self)
-        for k, v in self.Columns.items():
-            if k in list(columns.keys()):
-                v.Add(v.Type(columns[k]))
-            else:
-                v.Add(v.Type())
-        if self.Save != None:
+        self.Data = self.Data._append(columns, ignore_index=True)
+        if self.Save:
             self.Save()
-        if self.afterInsert != None:
+        if self.afterInsert:
             self.afterInsert(self)
+        return self
 
     def Select(self, condition=None) -> "Table":
-        if self.beforeSelect != None:
+        if self.beforeSelect:
             self.beforeSelect(self)
-        if condition == None:
-            ret = self.Copy()
-            if self.onSelect != None:
-                self.onSelect(ret)
-            return ret
+        if condition is None:
+            return self.Copy()
         ReturnTable = Table("Selected Table")
-        ReturnTable.Columns = {
-            k: Column(v.Type, v.Options) for k, v in self.Columns.items()
-        }
-        for i in range(self.RowCount):
-            if condition[i]:
-                ReturnTable.Insert(
-                    **{k: self.Rows[i][j] for j, k in enumerate(self.Columns.keys())}
-                )
-        if self.afterSelect != None:
-            self.afterSelect(ReturnTable)
+        ReturnTable.Data = self.Data[condition].copy()
+        if self.afterSelect:
+            self.afterSelect(self)
         return ReturnTable
 
-    def Delete(self, index=None, where=None):
-        if self.beforeDelete != None:
+    def Delete(self, condition=None, index=None, all=False):
+        if self.beforeDelete:
             self.beforeDelete(self)
-        if self.isEmpty():
-            raise ValueError("Table is empty.")
-        if index == None and where == None:
-            self.Columns = {
-                k: Column(v.Type, v.Options) for k, v in self.Columns.items()
-            }
-        if index != None:
-            [v.RemoveAt(index) for v in self.Columns.values()]
-        if where != None:
-            [x.RemoveByList(where) for x in self.Columns.values()]
-        if self.Save != None:
+
+        if all == True:
+            self.Data = pd.DataFrame()
+
+        if index is not None:
+            self.Data = self.Data.drop(index).reset_index(
+                drop=True
+            )  # Remove row by index
+
+        if condition is not None:
+            self.Data = self.Data[condition].reset_index(
+                drop=True
+            )  # Remove rows based on condition
+
+        if self.Save:
             self.Save()
-        if self.afterDelete != None:
+        if self.afterDelete:
             self.afterDelete(self)
 
-    def Update(self, index=None, where=None, **columns: Union[list, Type]):
-        if self.beforeUpdate != None:
-            self.beforeUpdate(self)
-        if index == None and where == None:
-            for k, v in columns.items():
-                self.Columns[k].Data = [v for _ in self.Columns[k].Data]
-        if index != None:
-            for k, v in columns.items():
-                self.Columns[k].Data[index] = v
-        if where != None:
-            for k, v in columns.items():
-                for i in range(len(where)):
-                    if where[i]:
-                        self.Columns[k].Data[i] = v
-        if self.Save != None:
+    def DeleteAt(self, index):
+        if self.beforeDelete:
+            self.beforeDelete(self)
+        self.Data = self.Data.drop(index).reset_index(drop=True)
+        if self.Save:
             self.Save()
-        if self.afterUpdate != None:
+        if self.afterDelete:
+            self.afterDelete(self)
+
+    def Update(self, selector=None, **columns):
+        if self.beforeUpdate:
+            self.beforeUpdate(self)
+        if selector is None:
+            # Update entire columns with the same value across all rows
+            for k, v in columns.items():
+                self.Data[k] = [v] * len(self.Data)
+        else:
+            # Update rows based on selector
+            for k, v in columns.items():
+                self.Data.loc[selector, k] = v
+        if self.Save:
+            self.Save()
+        if self.afterUpdate:
             self.afterUpdate(self)
 
-    def isEmpty(self) -> bool:
-        return all([col.isEmpty() for col in self.Columns.values()])
-
-    def __str__(self) -> str:
-        if self.isEmpty():
-            return f"Table is empty."
-
-        def getMaxLength(column) -> int:
-            return max([len(str(x)) for x in column.Data])
-
-        def formatCell(cell, maxLen):
-            return f" {cell} {' '*(maxLen-len(str(cell)))}"
-
-        maxLenperColumn = [
-            max(getMaxLength(col), len(key)) + self.PrintPadding
-            for col, key in zip(self.Columns.values(), self.Columns.keys())
-        ]
-        numberOfLines = max([len(col.Data) for col in self.Columns.values()])
-        ret = f"{self.TableName} ({self.Length} Entries):\n"
-        ret += (
-            "|"
-            + "|".join(
-                [
-                    formatCell(list(self.Columns.keys())[i], maxLenperColumn[i])
-                    for i in range(len(self.Columns))
-                ]
-            )
-            + "|\n"
-        )
-        ret += (
-            "|"
-            + "|\n|".join(
-                "|".join(
-                    (formatCell(col.Data[i], maxLen) if col.Type != bytes else "BLOB")
-                    for col, maxLen in zip(self.Columns.values(), maxLenperColumn)
-                )
-                for i in range(numberOfLines)
-            )
-            + "|"
-        )
-        return ret
-
-    @property
-    def Rows(self) -> list:
-        return [
-            {key: col.Data[i] for key, col in self.Columns.items()}
-            for i in range(len(self.Columns[list(self.Columns.keys())[0]].Data))
-        ]
-
-    @property
-    def Length(self) -> int:
-        return self.RowCount
-
-    def __len__(self) -> int:
-        return self.RowCount
-
-    def GetColumns(self) -> list:
-        return list(self.Columns.keys())
-
-    def Exists(self, **columns: Union[list, Type]) -> bool:
+    def UpdateAt(self, index, **columns):
+        if self.beforeUpdate:
+            self.beforeUpdate(self)
         for k, v in columns.items():
-            if k not in self.Columns.keys():
-                return False
-            if v not in self.Columns[k].Data:
+            self.Data.at[index, k] = v
+        if self.Save:
+            self.Save()
+        if self.afterUpdate:
+            self.afterUpdate(self)
+
+    def RemoveDuplicates(self):
+        self.Data = self.Data.drop_duplicates()
+        return self
+
+    def isEmpty(self):
+        return self.Data.empty
+
+    @property
+    def Columns(self):
+        return self.Data.columns.values
+
+    @property
+    def Rows(self):
+        return self.Data.values.tolist()
+
+    @property
+    def Length(self):
+        return len(self.Data)
+
+    @property
+    def df(self):
+        return self.Data
+
+    def __len__(self):
+        return len(self.Data)
+
+    def Exists(self, **columns):
+        for k, v in columns.items():
+            if not self.Data[k].isin([v]).any():
                 return False
         return True
 
-    @property
-    def RowCount(self) -> int:
-        return len(self.Rows)
-
     def Limit(self, n):
-        if self.beforeLimit != None:
-            self.beforeLimit(self)
-        T = Table(self.TableName, self.Save)
-        T.Columns = {k: Column(v.Type, v.Options) for k, v in self.Columns.items()}
-        for i in range(min(n, self.RowCount)):
-            T.Insert(**{k: v.Data[i] for k, v in self.Columns.items()})
-        if self.afterLimit != None:
-            self.afterLimit(T)
-        return T
+        self.Data = self.Data.head(n)
+        return self
 
-    def Sort(self, Column, Reverse=False):
-        if self.beforeSort != None:
-            self.beforeSort(self)
-        if Column not in self.Columns.keys():
-            raise ValueError(f"Column '{Column}' not found.")
-        T = self.Copy()
-        sorted_indices = sorted(
-            range(len(T.Columns[Column].Data)),
-            key=lambda i: T.Columns[Column].Data[i],
-            reverse=Reverse,
-        )
-        for col in T.Columns.values():
-            col.Data = [col.Data[i] for i in sorted_indices]
-        if self.afterSort != None:
-            self.afterSort(T)
-        return T
+    def Sort(self, Column, ascending=True):
+        self.Data = self.Data.sort_values(by=Column, ascending=ascending)
+        return self
 
     def Copy(self):
-        if self.beforeCopy != None:
-            self.beforeCopy(self)
         T = Table(self.TableName, self.Save)
-        T.Columns = {k: Column(v.Type, v.Options) for k, v in self.Columns.items()}
-        for i in range(self.RowCount):
-            T.Insert(**{k: v.Data[i] for k, v in self.Columns.items()})
-        if self.afterCopy != None:
-            self.afterCopy(T)
+        T.Data = self.Data.copy()
         return T
 
+    def ColumnStats(self, column):
+        return self.Data[column].describe()
+
+    def Difference(self, OtherTable):
+        return self.Data.compare(OtherTable.Data)
+
+    def Intersection(self, OtherTable, onColumn=None):
+        if onColumn:
+            return pd.merge(self.Data, OtherTable.Data, how="inner", on=onColumn)
+        return pd.merge(self.Data, OtherTable.Data, how="inner")
+
+    def Union(self, OtherTable):
+        return pd.concat([self.Data, OtherTable.Data]).drop_duplicates()
+
+    def Distinct(self, Column):
+        return self.Data[Column].unique()
+
+    def ReorderColumns(self, NewOrder):
+        self.Data = self.Data[NewOrder]
+        return self
+
+    def Map(self, Column, Mapping):
+        self.Data[Column] = self.Data[Column].map(Mapping)
+        return self
+
     def toJson(self):
-        return {"Columns": {k: v.toJson() for k, v in self.Columns.items()}}
+        return self.Data.to_json()
+
+    def LoadFromJson(self, json):
+        from io import StringIO
+
+        json_data = StringIO(json)
+        self.Data = pd.read_json(json_data)

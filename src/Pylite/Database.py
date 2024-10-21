@@ -1,10 +1,9 @@
 import json
 from typing import Optional
 import sqlite3
-from .Column import Column
 from .Table import Table
 from .Tools import *
-from .Types import *
+import pandas as pd
 
 
 class Database:
@@ -25,12 +24,18 @@ class Database:
         return self.Tables[Key]
 
     def __getattr__(self, name: str) -> Optional[Table]:
-        if name in self.Columns:
-            return self.Columns[name]
+        if name in self.Tables:
+            return self.Tables[name]
         raise AttributeError(f"Table '{name}' not found.")
 
     def GetTables(self):
         return list(self.Tables.keys())
+
+    def ClearEmptyTables(self):
+        for k in list(self.Tables.keys()):
+            if self.Tables[k].isEmpty():
+                self.DeleteTable(k)
+        self.SaveIfPossible()
 
     def CreateTable(self, TableName) -> Table:
         self.Tables[TableName] = Table(TableName, self.SaveIfPossible)
@@ -39,14 +44,6 @@ class Database:
         )
         self.SaveIfPossible()
         return self.Tables[TableName]
-
-    # @NotImplemented
-    # def CreateTableForClass(self, TableName, Class) -> Table:
-    #     self.Tables[TableName] = Table(TableName, self.autosave_callback if self.autosave else None)
-    #     self.Tables[TableName].AddColumn(**Class.__dict__)
-    #     setattr(Class, TableName, property(lambda self: self.Tables[TableName]))
-    #     self.SaveIfPossible()
-    #     return self.Tables[TableName]
 
     def RenameTable(self, OldName, NewName):
         self.Tables[NewName] = self.Tables.pop(OldName)
@@ -80,13 +77,7 @@ class Database:
                     data = json.loads(decrypt(f.read(), self.password))
                 for k, v in data["Tables"].items():
                     t = self.CreateTable(k)
-                    for c in v["Columns"].keys():
-                        t.Columns[c] = Column(
-                            eval(v["Columns"][c]["Type"]),
-                            v["Columns"][c]["Options"],
-                            self.Save,
-                        )
-                        t.Columns[c].Data = v["Columns"][c]["Data"]
+                    t.LoadFromJson(v)
             self.autosave = wasOnAutoSave
         except Exception as e:
             raise SystemExit(
@@ -96,20 +87,13 @@ class Database:
             )
 
     def LoadFromSQL(self, SQLFilePath):
-        SQL_TYPE_MAP = {"INTEGER": int, "REAL": float, "TEXT": str, "BLOB": bytes}
         conn = sqlite3.connect(SQLFilePath)
         c = conn.cursor()
         c.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [x[0] for x in c.fetchall() if x[0] != "sqlite_sequence"]
         for table in tables:
             t = self.CreateTable(table)
-            c.execute(f"PRAGMA table_info({table})")
-            columns = {x[1]: SQL_TYPE_MAP[x[2]] for x in c.fetchall()}
-            t.AddColumn(**columns)
-            for column in columns:
-                t.Columns[column].Data = [
-                    x[0] for x in c.execute(f"SELECT {column} FROM {table}").fetchall()
-                ]
+            t.Data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
         conn.close()
 
     def Save(self, Path="", Password="", asJson=False):
@@ -136,7 +120,10 @@ class Database:
             self.Save()
 
     def toJson(self):
-        Tables = {k: v.toJson() for k, v in self.Tables.items()}
+        Tables = {}
+        for k, v in self.Tables.items():
+            print(k)
+            Tables[k] = v.toJson()
         return {"Tables": Tables}
 
     def __str__(self):
@@ -152,5 +139,4 @@ class Database:
             print(self.Tables[Table])
         except:
             print(self.Tables[TableToPrint])
-
         return "\b"
