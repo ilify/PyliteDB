@@ -122,7 +122,6 @@ class Database:
     def toJson(self):
         Tables = {}
         for k, v in self.Tables.items():
-            print(k)
             Tables[k] = v.toJson()
         return {"Tables": Tables}
 

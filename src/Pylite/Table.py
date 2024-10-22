@@ -140,7 +140,7 @@ class Table:
     def Insert(self, **columns):
         if self.beforeInsert:
             self.beforeInsert(self)
-        self.Data = self.Data._append(columns, ignore_index=True)
+        self.Data = pd.concat([self.Data, pd.DataFrame([columns])], ignore_index=True)
         if self.Save:
             self.Save()
         if self.afterInsert:
@@ -163,7 +163,11 @@ class Table:
             self.beforeDelete(self)
 
         if all == True:
+            cols = self.Data.columns
+            types = [s.dtype for s in self.Data.values.T]
             self.Data = pd.DataFrame()
+            self.AddColumn(**{col: dtype for col, dtype in zip(cols, types)})
+            
 
         if index is not None:
             self.Data = self.Data.drop(index).reset_index(
@@ -171,9 +175,9 @@ class Table:
             )  # Remove row by index
 
         if condition is not None:
-            self.Data = self.Data[condition].reset_index(
+            self.Data = self.Data[~condition].reset_index(
                 drop=True
-            )  # Remove rows based on condition
+            )  # Remove rows based on the inverse of the condition
 
         if self.Save:
             self.Save()
