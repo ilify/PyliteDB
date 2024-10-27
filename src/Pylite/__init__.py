@@ -17,4 +17,4 @@ PyLite: A lightweight database library using Pandas DataFrames.
 """
 
 # Expose the Database class when the package is imported
-__all__ = ["Database", "Table"]
+__all__ = ["Database", "Table","Email","Password"]

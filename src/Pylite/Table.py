@@ -1,7 +1,8 @@
-from h11 import Data
+from matplotlib import table
 import pandas as pd
 from typing import Type
 from faker import Faker
+
 
 
 class Table:
@@ -9,8 +10,11 @@ class Table:
         self.Data = pd.DataFrame()
         self.TableName = TableName
         self.Save = SaveCallback
+        self.PrimaryKey = None
+        self.ForeignKeys = {}
+        self.isLinked = False
         self.FakeData = Faker()
-        # Events
+        # region Events
         self.beforeInsert = None
         self.afterInsert = None
         self.beforeUpdate = None
@@ -23,14 +27,14 @@ class Table:
         self.afterRemoveColumn = None
         self.beforeSelect = None
         self.afterSelect = None
-        self.beforeSort = None
-        self.afterSort = None
-        self.beforeLimit = None
-        self.afterLimit = None
         self.beforeAddColumn = None
         self.afterAddColumn = None
         self.beforeCopy = None
         self.afterCopy = None
+        # endregion
+
+
+
 
     def __str__(self) -> str:
         PrintPadding = 1
@@ -91,9 +95,10 @@ class Table:
 
     def __getitem__(self, Key):
         if isinstance(Key, int):
-            return self.Data.iloc[Key]
+            return DictObj(self.Data.iloc[Key])
         return self.Data[Key]
-
+    
+    #region CRUD  
     def AddColumn(self, **columns: Type):
         if self.beforeAddColumn:
             self.beforeAddColumn(self)
@@ -158,40 +163,60 @@ class Table:
             self.afterSelect(self)
         return ReturnTable
 
+    def Get(self, **columns):
+        if self.beforeSelect:
+            self.beforeSelect(self)
+        condition = pd.Series([True] * len(self.Data))
+        for col, val in columns.items():
+            condition &= self.Data[col] == val
+        try:
+            result = self.Data[condition].to_dict(orient="records")[0]
+        except IndexError:
+            result = {}
+        if self.afterSelect:
+            self.afterSelect(self)
+        return DictObj(result) if result!={} else None
+        
     def Delete(self, condition=None, index=None, all=False):
         if self.beforeDelete:
             self.beforeDelete(self)
 
-        if all == True:
+        deleted_rows = None
+
+        if all:
+            deleted_rows = self.Data.copy()
             cols = self.Data.columns
             types = [s.dtype for s in self.Data.values.T]
             self.Data = pd.DataFrame()
             self.AddColumn(**{col: dtype for col, dtype in zip(cols, types)})
-            
 
         if index is not None:
-            self.Data = self.Data.drop(index).reset_index(
-                drop=True
-            )  # Remove row by index
+            deleted_rows = self.Data.iloc[[index]].copy()
+            self.Data = self.Data.drop(index).reset_index(drop=True)  # Remove row by index
 
         if condition is not None:
-            self.Data = self.Data[~condition].reset_index(
-                drop=True
-            )  # Remove rows based on the inverse of the condition
+            deleted_rows = self.Data[condition].copy()
+            self.Data = self.Data[~condition].reset_index(drop=True)  # Remove rows based on the inverse of the condition
 
         if self.Save:
             self.Save()
         if self.afterDelete:
             self.afterDelete(self)
+        if self.isLinked:
+            self.__LinkedDelete__(deleted_rows)
 
     def DeleteAt(self, index):
         if self.beforeDelete:
             self.beforeDelete(self)
+        deleted_rows = self.Data.iloc[[index]].copy()
         self.Data = self.Data.drop(index).reset_index(drop=True)
         if self.Save:
             self.Save()
         if self.afterDelete:
             self.afterDelete(self)
+        # print(deleted_rows)
+        if self.isLinked:
+            self.__LinkedDelete__(deleted_rows)
 
     def Update(self, selector=None, **columns):
         if self.beforeUpdate:
@@ -225,7 +250,8 @@ class Table:
 
     def isEmpty(self):
         return self.Data.empty
-
+    #endregion
+    #region Properties
     @property
     def Columns(self):
         return self.Data.columns.values
@@ -244,8 +270,9 @@ class Table:
 
     def __len__(self):
         return len(self.Data)
-
-    def Exists(self, **columns):
+    #endregion
+    #region Extra
+    def Exists(self, **columns) -> bool:
         for k, v in columns.items():
             if not self.Data[k].isin([v]).any():
                 return False
@@ -294,6 +321,33 @@ class Table:
 
     def LoadFromJson(self, json):
         from io import StringIO
-
         json_data = StringIO(json)
         self.Data = pd.read_json(json_data)
+        for col in self.Data.columns:
+            setattr(
+                self.__class__,
+                col,
+                property(lambda self, col=col: self.Data[col]),
+            )
+            self.Data[col].__setattr__("parent", self.TableName) # needed for linking
+    #endregion
+
+    #region Linking
+    def LinkTo(self,pk,table,on):
+        self.isLinked = True
+        self.PrimaryKey = pk
+        self.ForeignKeys[table] = on
+        
+    def __LinkedDelete__(self,deletedRows):
+        for table, on in self.ForeignKeys.items():
+            table.Delete(condition=table.Data[on].isin(deletedRows[self.PrimaryKey]))
+    #endregion
+
+class DictObj:
+    def __init__(self, dictionary):
+        for key, value in dictionary.items():
+            setattr(self, key, value)
+            
+    def __str__(self):
+        return str(self.__dict__)
+

@@ -1,6 +1,14 @@
 from src.Pylite import Database
 
+# db = Database.LoadFromSQL("DataBase.db").Save("DataBase.pylite","password")
+db = Database("DataBase.pylite","password")
 
-db = Database("DataBase.pylite", "Pass123", True)
-db.ExpertExperience.Delete(db.ExpertExperience.ID == 3)
+db.Link(
+    source = db.Experts.ID,
+    targets = [db.ExpertExperience.ID,db.Reviews.ExpertID]
+)
+
+db.Experts.DeleteAt(0)
 print(db.ExpertExperience)
+# print(db.)
+

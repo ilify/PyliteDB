@@ -1,6 +1,7 @@
 import json
 from typing import Optional
 import sqlite3
+
 from .Table import Table
 from .Tools import *
 import pandas as pd
@@ -86,15 +87,18 @@ class Database:
                 else "Error while Loading Database : Database is Locked - Please Make Sure You Provide a Password :\n Database(Path,YOUR_PASSWORD_HERE)"
             )
 
-    def LoadFromSQL(self, SQLFilePath):
+    @staticmethod
+    def LoadFromSQL(SQLFilePath) -> 'Database':
+        db = Database()
         conn = sqlite3.connect(SQLFilePath)
         c = conn.cursor()
         c.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [x[0] for x in c.fetchall() if x[0] != "sqlite_sequence"]
         for table in tables:
-            t = self.CreateTable(table)
+            t = db.CreateTable(table)
             t.Data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
         conn.close()
+        return db
 
     def Save(self, Path="", Password="", asJson=False):
         if self.path == "" and Path == "":
@@ -119,6 +123,11 @@ class Database:
         if self.autosave:
             self.Save()
 
+    def Link(self,**columns):
+        source = self.Tables[columns["source"].parent]
+        for targetcol in columns["targets"]:
+            source.LinkTo(columns["source"].name, self.Tables[targetcol.parent], targetcol.name)
+        
     def toJson(self):
         Tables = {}
         for k, v in self.Tables.items():
