@@ -1,5 +1,5 @@
 # __init__.py
-
+from .TypeHelpers import email,password
 from .Table import Table
 from .Database import Database
 
@@ -7,7 +7,7 @@ from .Database import Database
 # from .Types import PyliteTypes
 
 # Optional: Metadata
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 __author__ = "Ilify"
 __email__ = "iliesmraihia@gmail.com"
 
@@ -17,4 +17,4 @@ PyLite: A lightweight database library using Pandas DataFrames.
 """
 
 # Expose the Database class when the package is imported
-__all__ = ["Database", "Table","Email","Password"]
+__all__ = ["Database", "Table","email","password"]

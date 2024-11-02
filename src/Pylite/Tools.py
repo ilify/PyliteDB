@@ -4,6 +4,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 import os
 from base64 import b64encode, b64decode
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -15,10 +16,11 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     
-    
+def print_warning(text):
+    print(f"{bcolors.WARNING}{text}{bcolors.ENDC}")
 
-# Generate a secure key from a password
-def derive_key(password, salt) -> bytes:
+def derive_key(password: str, salt: bytes) -> bytes:
+    """Generate a secure key from a password using PBKDF2."""
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,  # 256-bit key
@@ -28,10 +30,19 @@ def derive_key(password, salt) -> bytes:
     )
     return kdf.derive(password.encode())
 
-# AES-GCM encryption function
-def encrypt(plaintext, password) -> str:
+def encrypt(data: bytes, password: str) -> bytes:
+    """
+    Encrypt binary data using AES-GCM.
+    
+    Args:
+        data: Binary data to encrypt
+        password: Password for encryption
+    
+    Returns:
+        Encrypted binary data with salt, IV, and tag
+    """
     salt = os.urandom(16)  # Generate a random salt
-    iv = os.urandom(12)  # Generate a random IV (nonce)
+    iv = os.urandom(12)    # Generate a random IV (nonce)
     key = derive_key(password, salt)
     
     encryptor = Cipher(
@@ -40,19 +51,27 @@ def encrypt(plaintext, password) -> str:
         backend=default_backend()
     ).encryptor()
     
-    ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
+    # No need to encode data since it's already in bytes
+    ciphertext = encryptor.update(data) + encryptor.finalize()
     
-    return b64encode(salt + iv + encryptor.tag + ciphertext).decode('utf-8')
+    # Combine all components into a single bytes object
+    return salt + iv + encryptor.tag + ciphertext
 
-
-# AES-GCM decryption function
-def decrypt(ciphertext, password) -> str:
-    data = b64decode(ciphertext)
+def decrypt(encrypted_data: bytes, password: str) -> bytes:
+    """
+    Decrypt binary data using AES-GCM.
     
-    salt = data[:16]  # Extract the salt
-    iv = data[16:28]  # Extract the IV (nonce)
-    tag = data[28:44]  # Extract the GCM tag
-    ciphertext = data[44:]  # Extract the encrypted message
+    Args:
+        encrypted_data: Encrypted binary data containing salt, IV, tag, and ciphertext
+        password: Password for decryption
+    
+    Returns:
+        Decrypted binary data
+    """
+    salt = encrypted_data[:16]      # Extract the salt
+    iv = encrypted_data[16:28]      # Extract the IV (nonce)
+    tag = encrypted_data[28:44]     # Extract the GCM tag
+    ciphertext = encrypted_data[44:] # Extract the encrypted data
     
     key = derive_key(password, salt)
     
@@ -62,4 +81,5 @@ def decrypt(ciphertext, password) -> str:
         backend=default_backend()
     ).decryptor()
     
-    return (decryptor.update(ciphertext) + decryptor.finalize()).decode('utf-8')
+    # Return the decrypted bytes directly
+    return decryptor.update(ciphertext) + decryptor.finalize()

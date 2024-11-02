@@ -73,3 +73,6 @@ def SignUp(Email,Password):
         Password = Password
     )
 ```
+
+TODO :
+Types on read from sql

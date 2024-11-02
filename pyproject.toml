@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyliteDB"
-version = "0.2.2.1"
+version = "0.3.2"
 authors = [
   { name="Ilify", email="iliesmraihia@gmail.com" },
 ]

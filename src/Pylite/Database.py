@@ -5,6 +5,7 @@ import sqlite3
 from .Table import Table
 from .Tools import *
 import pandas as pd
+import dill
 
 
 class Database:
@@ -70,21 +71,27 @@ class Database:
         fromJson = False
         if self.password == "":
             fromJson = True
+            
         try:
-            with open(self.path, "r") as f:
+            with open(self.path, "rb") as f:  # Changed to 'rb' for binary reading
                 if fromJson:
-                    data = json.loads(f.read())
+                    data = dill.load(f)
                 else:
-                    data = json.loads(decrypt(f.read(), self.password))
-                for k, v in data["Tables"].items():
-                    t = self.CreateTable(k)
-                    t.LoadFromJson(v)
+                    encrypted_data = f.read()
+                    decrypted_data = decrypt(encrypted_data, self.password)
+                    data = dill.loads(decrypted_data)
+                    
+                
+                for table_name, table_data in data["Tables"].items():
+                    table = self.CreateTable(table_name)
+                    table.loadFromDict(table_data)
+                    
             self.autosave = wasOnAutoSave
         except Exception as e:
             raise SystemExit(
-                "Error while Loading Database : Incorrect Password"
+                "Error while Loading Database: Incorrect Password"
                 if self.password != ""
-                else "Error while Loading Database : Database is Locked - Please Make Sure You Provide a Password :\n Database(Path,YOUR_PASSWORD_HERE)"
+                else "Error while Loading Database: Database is Locked - Please Make Sure You Provide a Password:\n Database(Path,YOUR_PASSWORD_HERE)"
             )
 
     @staticmethod
@@ -102,19 +109,22 @@ class Database:
 
     def Save(self, Path="", Password="", asJson=False):
         if self.path == "" and Path == "":
-            raise SystemExit("Error while Saving Database : No path provided")
+            raise SystemExit("Error while Saving Database: No path provided")
 
         if self.path == "":
             self.path = Path
         if self.password == "":
             self.password = Password
 
-        file = json.dumps(self.toJson())
-        with open(self.path, "w") as f:
+        data = self.toDict()
+        
+        with open(self.path, "wb") as f:  # Changed to 'wb' for binary writing
             if asJson:
-                f.write(file)
+                dill.dump(data, f)
             else:
-                f.write(encrypt(file, self.password))
+                serialized_data = dill.dumps(data)
+                encrypted_data = encrypt(serialized_data, self.password)
+                f.write(encrypted_data)
 
     def ChangePassword(self, Password):
         self.password = Password
@@ -123,24 +133,30 @@ class Database:
         if self.autosave:
             self.Save()
 
-    def Link(self,**columns):
-        source = self.Tables[columns["source"].parent]
-        for targetcol in columns["targets"]:
-            source.LinkTo(columns["source"].name, self.Tables[targetcol.parent], targetcol.name)
+    def Link(self, source, target):
+        source_table = self.Tables[source.parent]
+        if isinstance(target, list):
+            for targetcol in target:
+                source_table.LinkTo(source.name, self.Tables[targetcol.parent], targetcol.name)
+        elif isinstance(target, pd.Series):
+            source_table.LinkTo(source.name, self.Tables[target.parent], target.name)
         
-    def toJson(self):
-        Tables = {}
-        for k, v in self.Tables.items():
-            Tables[k] = v.toJson()
-        return {"Tables": Tables}
+    def toDict(self):
+        """Convert database to a serializable dictionary"""
+        return {
+            "Tables": {
+                name: table.toDict() 
+                for name, table in self.Tables.items()
+            }
+        }
 
     def __str__(self):
         indexes = iter(range(0, len(self.GetTables())))
         tables_list = "\n ".join(
             [f"{next(indexes)} - {table}" for table in self.GetTables()]
         )
-        print(f"Database '{self.path}' Contains {len(self)} Tables :\n {tables_list}")
-        TableToPrint = input("Select Table To Display (use index or name) : ")
+        print(f"Database '{self.path}' Contains {len(self)} Tables:\n {tables_list}")
+        TableToPrint = input("Select Table To Display (use index or name): ")
         try:
             index = int(TableToPrint)
             Table = self.GetTables()[index]

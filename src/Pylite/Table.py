@@ -1,12 +1,16 @@
+from math import e
 from matplotlib import table
 import pandas as pd
 from typing import Type
 from faker import Faker
+from pyparsing import C
+import dill
 
+from .Tools import print_warning
 
 
 class Table:
-    def __init__(self, TableName, SaveCallback=None):
+    def __init__(self, TableName="", SaveCallback=None):
         self.Data = pd.DataFrame()
         self.TableName = TableName
         self.Save = SaveCallback
@@ -14,6 +18,7 @@ class Table:
         self.ForeignKeys = {}
         self.isLinked = False
         self.FakeData = Faker()
+        self.ColumnTypes = {}
         # region Events
         self.beforeInsert = None
         self.afterInsert = None
@@ -72,7 +77,7 @@ class Table:
 
         # Prepare rows
         rows = ""
-        for i, row in self.Data.iterrows():
+        for _, row in self.Data.iterrows():
             row_cells = [
                 str(cell).ljust(column_lengths[col]) for col, cell in row.items()
             ]
@@ -97,13 +102,14 @@ class Table:
         if isinstance(Key, int):
             return DictObj(self.Data.iloc[Key])
         return self.Data[Key]
-    
-    #region CRUD  
+
+    # region CRUD
     def AddColumn(self, **columns: Type):
         if self.beforeAddColumn:
             self.beforeAddColumn(self)
         for ColumnName, ColumnType in columns.items():
-            self.Data[ColumnName] = pd.Series(dtype=ColumnType)
+            self.Data[ColumnName] = pd.Series()
+            self.ColumnTypes[ColumnName] = ColumnType
             setattr(
                 self.__class__,
                 ColumnName,
@@ -145,11 +151,30 @@ class Table:
     def Insert(self, **columns):
         if self.beforeInsert:
             self.beforeInsert(self)
+            
+        
+        if(list(self.Columns) not in list(columns.keys())):
+            missing_columns = list(set(self.Columns) - set(columns.keys()))
+            extra_columns = list(set(columns.keys()) - set(self.Columns))
+            if len(missing_columns) > 0 :
+                print_warning(f"Warning on Insert : the flowing columns are missing ({", ".join(missing_columns)}) They will be filled with None instead")
+            if len(extra_columns) > 0:
+                print_warning(f"Warning on Insert : {self.TableName} has no column named ({", ".join(extra_columns)}) They will be ignored")
+            #remove extra columns and add missing columns
+            for col in extra_columns:
+                del columns[col]
+            for col in missing_columns:
+                columns[col] = None
+            
+        for col, val in columns.items():
+            if not isinstance(val, self.ColumnTypes[col]) and val is not None:
+                columns[col] = self.ColumnTypes[col](val)
+
         self.Data = pd.concat([self.Data, pd.DataFrame([columns])], ignore_index=True)
         if self.Save:
             self.Save()
         if self.afterInsert:
-            self.afterInsert(self)
+            self.afterInsert(self, columns)
         return self
 
     def Select(self, condition=None) -> "Table":
@@ -175,8 +200,8 @@ class Table:
             result = {}
         if self.afterSelect:
             self.afterSelect(self)
-        return DictObj(result) if result!={} else None
-        
+        return DictObj(result) if result != {} else None
+
     def Delete(self, condition=None, index=None, all=False):
         if self.beforeDelete:
             self.beforeDelete(self)
@@ -192,11 +217,15 @@ class Table:
 
         if index is not None:
             deleted_rows = self.Data.iloc[[index]].copy()
-            self.Data = self.Data.drop(index).reset_index(drop=True)  # Remove row by index
+            self.Data = self.Data.drop(index).reset_index(
+                drop=True
+            )  # Remove row by index
 
         if condition is not None:
             deleted_rows = self.Data[condition].copy()
-            self.Data = self.Data[~condition].reset_index(drop=True)  # Remove rows based on the inverse of the condition
+            self.Data = self.Data[~condition].reset_index(
+                drop=True
+            )  # Remove rows based on the inverse of the condition
 
         if self.Save:
             self.Save()
@@ -250,8 +279,9 @@ class Table:
 
     def isEmpty(self):
         return self.Data.empty
-    #endregion
-    #region Properties
+
+    # endregion
+    # region Properties
     @property
     def Columns(self):
         return self.Data.columns.values
@@ -270,8 +300,9 @@ class Table:
 
     def __len__(self):
         return len(self.Data)
-    #endregion
-    #region Extra
+
+    # endregion
+    # region Extra
     def Exists(self, **columns) -> bool:
         for k, v in columns.items():
             if not self.Data[k].isin([v]).any():
@@ -316,38 +347,102 @@ class Table:
         self.Data[Column] = self.Data[Column].map(Mapping)
         return self
 
-    def toJson(self):
-        return self.Data.to_json()
 
-    def LoadFromJson(self, json):
-        from io import StringIO
-        json_data = StringIO(json)
-        self.Data = pd.read_json(json_data)
-        for col in self.Data.columns:
+    def toDict(self):
+        """Convert table to a serializable dictionary"""
+        return {
+            "TableName": self.TableName,
+            "Data": self.Data.to_dict(orient='records'),
+            "PrimaryKey": self.PrimaryKey,
+            "ForeignKeys": self.ForeignKeys,
+            "isLinked": self.isLinked,
+            "ColumnTypes": self.ColumnTypes,
+            "Events": {
+                "beforeInsert": dill.dumps(self.beforeInsert),
+                "afterInsert": dill.dumps(self.afterInsert),
+                "beforeUpdate": dill.dumps(self.beforeUpdate),
+                "afterUpdate": dill.dumps(self.afterUpdate),
+                "beforeDelete": dill.dumps(self.beforeDelete),
+                "afterDelete": dill.dumps(self.afterDelete),
+                "beforeRenameColumn": dill.dumps(self.beforeRenameColumn),
+                "afterRenameColumn": dill.dumps(self.afterRenameColumn),
+                "beforeRemoveColumn": dill.dumps(self.beforeRemoveColumn),
+                "afterRemoveColumn": dill.dumps(self.afterRemoveColumn),
+                "beforeSelect": dill.dumps(self.beforeSelect),
+                "afterSelect": dill.dumps(self.afterSelect),
+                "beforeAddColumn": dill.dumps(self.beforeAddColumn),
+                "afterAddColumn": dill.dumps(self.afterAddColumn),
+                "beforeCopy": dill.dumps(self.beforeCopy),
+                "afterCopy": dill.dumps(self.afterCopy)
+            }
+        }
+
+    
+    def loadFromDict(self, data):
+        """Load table data from a dictionary"""
+        self.TableName = data["TableName"]
+        self.Data = pd.DataFrame(data["Data"])
+        self.PrimaryKey = data["PrimaryKey"]
+        self.ForeignKeys = data["ForeignKeys"]
+        self.isLinked = data["isLinked"]
+        self.ColumnTypes = data["ColumnTypes"]
+        
+        # Restore events
+        events = data["Events"]
+        for event_name, event_bytes in events.items():
+            if event_bytes is not None:
+                setattr(self, event_name, dill.loads(event_bytes))
+        
+        # Recreate property accessors for columns
+        for column in self.Data.columns:
             setattr(
                 self.__class__,
-                col,
-                property(lambda self, col=col: self.Data[col]),
+                column,
+                property(lambda self, col=column: self.Data[col])
             )
-            self.Data[col].__setattr__("parent", self.TableName) # needed for linking
-    #endregion
+            self.Data[column].__setattr__("parent", self.TableName)  # needed for linking
+        
+        return self
 
-    #region Linking
-    def LinkTo(self,pk,table,on):
+    def SaveToDisk(self, path):
+        """Save the table to disk"""
+        try:
+            with open(path, 'wb') as f:
+                dill.dump(self.toDict(), f)
+            return True
+        except Exception as e:
+            print(f"Error saving table: {e}")
+            return False
+
+    def LoadFromDisk(self, path):
+        """Load table data from disk into the current instance"""
+        try:
+            with open(path, 'rb') as f:
+                data = dill.load(f)
+            return self.loadFromDict(data)
+        except Exception as e:
+            print(f"Error loading table: {e}")
+            return None
+
+    # endregion
+
+    # region Linking
+    def LinkTo(self, pk, table, on):
         self.isLinked = True
         self.PrimaryKey = pk
         self.ForeignKeys[table] = on
-        
-    def __LinkedDelete__(self,deletedRows):
+
+    def __LinkedDelete__(self, deletedRows):
         for table, on in self.ForeignKeys.items():
             table.Delete(condition=table.Data[on].isin(deletedRows[self.PrimaryKey]))
-    #endregion
+
+    # endregion
+
 
 class DictObj:
     def __init__(self, dictionary):
         for key, value in dictionary.items():
             setattr(self, key, value)
-            
+
     def __str__(self):
         return str(self.__dict__)
-
