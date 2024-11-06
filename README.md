@@ -16,7 +16,7 @@ Pylite is a lightweight database system built in Python. It provides a simple an
 ## Installation
 
 ```bash
-pip install PyliteDB  # Package name may vary
+pip install PyliteDB
 ```
 
 ## Quick Start
