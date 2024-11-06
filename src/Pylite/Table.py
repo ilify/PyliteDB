@@ -283,8 +283,8 @@ class Table:
     # endregion
     # region Properties
     @property
-    def Columns(self):
-        return self.Data.columns.values
+    def Columns(self) -> list:
+        return list(self.ColumnTypes.keys())
 
     @property
     def Rows(self):
@@ -304,6 +304,7 @@ class Table:
     # endregion
     # region Extra
     def Exists(self, **columns) -> bool:
+        if self.isEmpty(): return False
         for k, v in columns.items():
             if not self.Data[k].isin([v]).any():
                 return False
@@ -443,6 +444,10 @@ class DictObj:
     def __init__(self, dictionary):
         for key, value in dictionary.items():
             setattr(self, key, value)
-
+    
+    def __iter__(self):
+        return iter(self.__dict__.items())
+    
     def __str__(self):
         return str(self.__dict__)
+
