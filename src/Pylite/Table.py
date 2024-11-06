@@ -1,6 +1,5 @@
 from math import e
 from random import randint
-from matplotlib import table
 import pandas as pd
 from typing import Type
 from faker import Faker

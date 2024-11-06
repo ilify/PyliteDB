@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyliteDB"
-version = "0.3.6"
+version = "0.4.1"
 authors = [
   { name="Ilify", email="iliesmraihia@gmail.com" },
 ]
@@ -16,7 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["pandas"]
+dependencies = ["pandas","faker","cryptography","dill"]
 
 [project.urls]
 Homepage = "https://github.com/ilify/Pylite"

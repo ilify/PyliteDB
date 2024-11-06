@@ -7,7 +7,7 @@ from .Database import Database
 # from .Types import PyliteTypes
 
 # Optional: Metadata
-__version__ = "0.3.0"
+__version__ = "0.4.1"
 __author__ = "Ilify"
 __email__ = "iliesmraihia@gmail.com"
 
