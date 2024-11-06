@@ -1,4 +1,5 @@
 from math import e
+from random import randint
 from matplotlib import table
 import pandas as pd
 from typing import Type
@@ -174,7 +175,7 @@ class Table:
         if self.Save:
             self.Save()
         if self.afterInsert:
-            self.afterInsert(self, columns)
+            self.afterInsert(self, DictObj(columns))
         return self
 
     def Select(self, condition=None) -> "Table":
@@ -439,6 +440,30 @@ class Table:
 
     # endregion
 
+    # region Fake Data
+    def GenerateFake(self,n):
+        nativeTypes = [int, float, str, bool]
+        for i in range(n):
+            col = {}
+            for k,v in self.ColumnTypes.items():
+                if v in nativeTypes:
+                    if v == int:
+                        col[k] = randint(-1000000,1000000)
+                    elif v == float:
+                        col[k] = randint(-1000000,1000000)/100
+                    elif v == str:
+                        col[k] = self.FakeData.word()
+                    elif v == bool:
+                        col[k] = randint(0,1) == 1
+                else:
+                    col[k] = v.fake()
+            
+            self.Insert(**col)
+            
+            # col = {k:v.fake() for k,v in self.ColumnTypes}
+            # print(col)
+            
+    # endregion
 
 class DictObj:
     def __init__(self, dictionary):
